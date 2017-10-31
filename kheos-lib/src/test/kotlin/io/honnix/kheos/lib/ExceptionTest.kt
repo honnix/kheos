@@ -17,10 +17,15 @@
  */
 package io.honnix.kheos.lib
 
-data class HeosCommandException(val eid: Int, val text: String) : Exception(text) {
-  companion object {
-    fun build(message: Message) =
-        HeosCommandException(message.value("eid")!!.toInt(),
-            message.value("text")!!)
+import io.kotlintest.properties.forAll
+import io.kotlintest.specs.StringSpec
+
+class HeosCommandExceptionTest : StringSpec({
+  "should build correct exception from message" {
+    forAll({ eid: Int, text: String ->
+      HeosCommandException.build(
+          Message(mapOf("eid" to listOf(eid.toString()), "text" to listOf(text)))
+      ) == HeosCommandException(eid, text)
+    })
   }
-}
+})

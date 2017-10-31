@@ -45,22 +45,21 @@ interface HeosClient {
   }
 }
 
-private class HeosClientImpl(host: String,
-                             socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
-                             private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
+internal class HeosClientImpl(host: String,
+                              socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
+                              private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
   private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
 
   private val clientSocket by lazy(socketFactory)
   private val output by lazy { PrintWriter(clientSocket.getOutputStream(), true) }
   private val input by lazy { BufferedReader(InputStreamReader(clientSocket.getInputStream())) }
 
-  private fun <T : GenericResponse> sendCommand(responseType: Class<T>,
-                                                command: GroupedCommand,
-                                                attributes: Map<String, String> = emptyMap()): T {
+  private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
+                                                       attributes: Map<String, String> = emptyMap()): T {
     output.printf("${mkCommand(command, attributes)}\r\n")
     val rawResponse = input.readLine()
     logger.debug(rawResponse)
-    val response = JSON.mapper.readValue(rawResponse, responseType)
+    val response = JSON.mapper.readValue(rawResponse, T::class.java)
 
     if (response.status.result == Result.FAIL) {
       throw HeosCommandException.build(response.status.message)
@@ -79,11 +78,12 @@ private class HeosClientImpl(host: String,
     heartbeatExecutorService.scheduleWithFixedDelay({
       try {
         logger.info("sending heartbeat command")
-        sendCommand(HeartbeatResponse::class.java, GroupedCommand(SYSTEM, HEART_BEAT))
+        val response: HeartbeatResponse = sendCommand(GroupedCommand(SYSTEM, HEART_BEAT))
+        logger.debug("received heartbeat response {}", response)
       } catch (e: HeosCommandException) {
-        logger.warn("heartbeat command got a failure: eid({}) text({})", e.eid, e.text, e)
+        logger.warn("heartbeat command got a fail status: eid({}) text({})", e.eid, e.text, e)
       } catch (e: Exception) {
-        logger.error("failure happened for heartbeat command", e)
+        logger.error("unknown failure happened", e)
       }
     }, 0, 30, TimeUnit.SECONDS)
   }
@@ -93,8 +93,8 @@ private class HeosClientImpl(host: String,
     clientSocket.close()
   }
 
-  override fun checkAccount() =
-      sendCommand(CheckAccountResponse::class.java, GroupedCommand(SYSTEM, CHECK_ACCOUNT))
+  override fun checkAccount(): CheckAccountResponse =
+      sendCommand(GroupedCommand(SYSTEM, CHECK_ACCOUNT))
 }
 
 fun main(args: Array<String>) {

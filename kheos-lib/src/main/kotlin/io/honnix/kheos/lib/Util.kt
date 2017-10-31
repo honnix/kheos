@@ -21,14 +21,19 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.util.StdConverter
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 
+
 object JSON {
   val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
 
-  class Str2CommandConverter : StdConverter<String, GroupedCommand>() {
+  class Str2GroupedCommandConverter : StdConverter<String, GroupedCommand>() {
     override fun convert(value: String): GroupedCommand {
       val parts = value.split("/")
       return GroupedCommand(CommandGroup.from(parts[0]), Command.from(parts[1]))
     }
+  }
+
+  class GroupedCommand2StrConverter : StdConverter<GroupedCommand, String>() {
+    override fun convert(value: GroupedCommand) = value.toString()
   }
 
   class Str2MessageConverter : StdConverter<String, Message>() {
@@ -43,4 +48,13 @@ object JSON {
         }))
     }
   }
+
+  class Message2StrConverter : StdConverter<Message, String>() {
+    override fun convert(value: Message) = value.names().joinToString("&") { x ->
+      val values = value.values(x)!!
+      if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
+    }
+  }
+
+  fun serialize(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 }

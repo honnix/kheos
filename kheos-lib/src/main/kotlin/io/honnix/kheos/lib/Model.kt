@@ -21,12 +21,19 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import io.honnix.kheos.lib.JSON.Str2CommandConverter
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import io.honnix.kheos.lib.JSON.GroupedCommand2StrConverter
+import io.honnix.kheos.lib.JSON.Message2StrConverter
+import io.honnix.kheos.lib.JSON.Str2GroupedCommandConverter
 import io.honnix.kheos.lib.JSON.Str2MessageConverter
 
-data class GroupedCommand(val group: CommandGroup, val command: Command)
+data class GroupedCommand(val group: CommandGroup, val command: Command) {
+  override fun toString(): String {
+    return "${group.group}/${command.command}"
+  }
+}
 
-enum class Command(private val command: String) {
+enum class Command(val command: String) {
   HEART_BEAT("heart_beat"),
   CHECK_ACCOUNT("check_account");
 
@@ -68,16 +75,21 @@ enum class Result(private val status: String) {
 }
 
 data class Message(private val content: Map<String, List<String>>) {
-  fun parameters(name: String): List<String>? = content[name]
+  fun values(name: String): List<String>? = content[name]
 
-  fun parameter(name: String): String? {
-    return parameters(name)?.firstOrNull()
+  fun value(name: String): String? {
+    return values(name)?.firstOrNull()
   }
+
+  fun names() = content.keys
 }
 
-data class Status(@JsonDeserialize(converter = Str2CommandConverter::class) val command: GroupedCommand,
+data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
+                  @JsonSerialize(converter = GroupedCommand2StrConverter::class)
+                  val command: GroupedCommand,
                   val result: Result,
                   @JsonDeserialize(converter = Str2MessageConverter::class)
+                  @JsonSerialize(converter = Message2StrConverter::class)
                   val message: Message)
 
 interface GenericResponse {
