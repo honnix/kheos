@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.util.StdConverter
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 object JSON {
-  val mapper = ObjectMapper().registerModule(KotlinModule())!!
+  val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
 
   class Str2CommandConverter : StdConverter<String, GroupedCommand>() {
     override fun convert(value: String): GroupedCommand {

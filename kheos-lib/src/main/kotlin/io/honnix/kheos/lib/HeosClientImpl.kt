@@ -32,6 +32,10 @@ import java.util.concurrent.TimeUnit
 const val HEOS_PORT = 1255
 
 interface HeosClient {
+  fun startHeartbeat()
+
+  fun stopHeartbeat()
+
   fun checkAccount(): CheckAccountResponse
 
   companion object {
@@ -43,28 +47,12 @@ interface HeosClient {
 
 private class HeosClientImpl(host: String,
                              socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
-                             heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
+                             private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
   private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
-  private val clientSocket = socketFactory()
-  private val output = PrintWriter(clientSocket.getOutputStream(), true)
-  private val input = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
 
-  init {
-    heartbeatExecutorService.scheduleAtFixedRate({
-      try {
-        logger.info("sending heartbeat command")
-        sendCommand(HeartbeatResponse::class.java, GroupedCommand(SYSTEM, HEART_BEAT))
-      } catch (e: HeosCommandException) {
-        logger.warn("heartbeat command got a failure status", e)
-      } catch (e: Exception) {
-        logger.error("failure happened for heartbeat command", e)
-      }
-    }, 5, 30, TimeUnit.SECONDS)
-
-    Runtime.getRuntime().addShutdownHook(Thread({
-      heartbeatExecutorService.shutdownNow()
-    }))
-  }
+  private val clientSocket by lazy(socketFactory)
+  private val output by lazy { PrintWriter(clientSocket.getOutputStream(), true) }
+  private val input by lazy { BufferedReader(InputStreamReader(clientSocket.getInputStream())) }
 
   private fun <T : GenericResponse> sendCommand(responseType: Class<T>,
                                                 command: GroupedCommand,
@@ -84,7 +72,25 @@ private class HeosClientImpl(host: String,
     val attributesStr = if (attributes.isNotEmpty())
       "?${attributes.map { (k, v) -> "$k=$v" }.joinToString(separator = "&")}"
     else ""
-    return "heos:///${command.group.group}/${command.command}$attributesStr"
+    return "heos://${command.group.group}/${command.command}$attributesStr"
+  }
+
+  override fun startHeartbeat() {
+    heartbeatExecutorService.scheduleWithFixedDelay({
+      try {
+        logger.info("sending heartbeat command")
+        sendCommand(HeartbeatResponse::class.java, GroupedCommand(SYSTEM, HEART_BEAT))
+      } catch (e: HeosCommandException) {
+        logger.warn("heartbeat command got a failure: eid({}) text({})", e.eid, e.text, e)
+      } catch (e: Exception) {
+        logger.error("failure happened for heartbeat command", e)
+      }
+    }, 0, 30, TimeUnit.SECONDS)
+  }
+
+  override fun stopHeartbeat() {
+    heartbeatExecutorService.shutdownNow()
+    clientSocket.close()
   }
 
   override fun checkAccount() =
@@ -93,5 +99,7 @@ private class HeosClientImpl(host: String,
 
 fun main(args: Array<String>) {
   val c = HeosClient.newInstance("192.168.17.219")
+  c.startHeartbeat()
   println(c.checkAccount())
+  c.stopHeartbeat()
 }

@@ -17,7 +17,7 @@
  */
 package io.honnix.kheos.lib
 
-class HeosCommandException(val eid: Int, val text: String) : Exception(text) {
+data class HeosCommandException(val eid: Int, val text: String) : Exception(text) {
   companion object {
     fun build(message: Message) =
         HeosCommandException(message.parameter("eid")!!.toInt(),
