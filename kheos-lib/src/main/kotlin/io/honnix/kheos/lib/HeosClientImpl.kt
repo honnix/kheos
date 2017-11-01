@@ -19,6 +19,8 @@ package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
 import io.honnix.kheos.lib.Command.HEART_BEAT
+import io.honnix.kheos.lib.Command.SIGN_IN
+import io.honnix.kheos.lib.Command.SIGN_OUT
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -36,7 +38,13 @@ interface HeosClient {
 
   fun stopHeartbeat()
 
+  fun heartbeat(): HeartbeatResponse
+
   fun checkAccount(): CheckAccountResponse
+
+  fun signIn(userName: String, password: String): SignInResponse
+
+  fun signOut(): SignOutResponse
 
   companion object {
     fun newInstance(host: String): HeosClient {
@@ -55,30 +63,28 @@ internal class HeosClientImpl(host: String,
   private val input by lazy { BufferedReader(InputStreamReader(clientSocket.getInputStream())) }
 
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
-                                                       attributes: Map<String, String> = emptyMap()): T {
+                                                               attributes: Attributes = Attributes(mapOf())): T {
     output.printf("${mkCommand(command, attributes)}\r\n")
     val rawResponse = input.readLine()
     logger.debug(rawResponse)
     val response = JSON.mapper.readValue(rawResponse, T::class.java)
 
-    if (response.status.result == Result.FAIL) {
+    if (response.status.result === Result.FAIL) {
       throw HeosCommandException.build(response.status.message)
     }
     return response
   }
 
-  private fun mkCommand(command: GroupedCommand, attributes: Map<String, String>): String {
-    val attributesStr = if (attributes.isNotEmpty())
-      "?${attributes.map { (k, v) -> "$k=$v" }.joinToString(separator = "&")}"
-    else ""
-    return "heos://${command.group.group}/${command.command}$attributesStr"
+  private fun mkCommand(command: GroupedCommand, attributes: Attributes): String {
+    val attributeStr = if (attributes.isNotEmpty()) "?$attributes" else ""
+    return "heos://${command.group.group}/${command.command}$attributeStr"
   }
 
   override fun startHeartbeat() {
     heartbeatExecutorService.scheduleWithFixedDelay({
       try {
         logger.info("sending heartbeat command")
-        val response: HeartbeatResponse = sendCommand(GroupedCommand(SYSTEM, HEART_BEAT))
+        val response: HeartbeatResponse = heartbeat()
         logger.debug("received heartbeat response {}", response)
       } catch (e: HeosCommandException) {
         logger.warn("heartbeat command got a fail status: eid({}) text({})", e.eid, e.text, e)
@@ -93,13 +99,19 @@ internal class HeosClientImpl(host: String,
     clientSocket.close()
   }
 
+  override fun heartbeat(): HeartbeatResponse =
+      sendCommand(GroupedCommand(SYSTEM, HEART_BEAT))
+
   override fun checkAccount(): CheckAccountResponse =
       sendCommand(GroupedCommand(SYSTEM, CHECK_ACCOUNT))
-}
 
-fun main(args: Array<String>) {
-  val c = HeosClient.newInstance("192.168.17.219")
-  c.startHeartbeat()
-  println(c.checkAccount())
-  c.stopHeartbeat()
+  override fun signIn(userName: String, password: String): SignInResponse =
+      sendCommand(GroupedCommand(SYSTEM, SIGN_IN),
+          AttributesBuilder()
+              .add("un", userName)
+              .add("pw", password)
+              .build())
+
+  override fun signOut(): SignOutResponse =
+      sendCommand(GroupedCommand(SYSTEM, SIGN_OUT))
 }

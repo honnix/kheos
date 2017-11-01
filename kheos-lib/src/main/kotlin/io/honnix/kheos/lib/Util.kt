@@ -32,10 +32,6 @@ object JSON {
     }
   }
 
-  class GroupedCommand2StrConverter : StdConverter<GroupedCommand, String>() {
-    override fun convert(value: GroupedCommand) = value.toString()
-  }
-
   class Str2MessageConverter : StdConverter<String, Message>() {
     override fun convert(value: String): Message {
       return if (value.isEmpty()) Message(mapOf())
@@ -46,13 +42,6 @@ object JSON {
         }.fold(mapOf(), { acc, x ->
           acc + (x.first to acc.getOrElse(x.first, { listOf() }) + x.second)
         }))
-    }
-  }
-
-  class Message2StrConverter : StdConverter<Message, String>() {
-    override fun convert(value: Message) = value.names().joinToString("&") { x ->
-      val values = value.values(x)!!
-      if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
     }
   }
 

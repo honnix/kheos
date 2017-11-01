@@ -26,53 +26,49 @@ class JSONTest : StringSpec({
         GroupedCommand(CommandGroup.SYSTEM, Command.HEART_BEAT)
   }
 
-  "should convert command to string" {
-    JSON.GroupedCommand2StrConverter().convert(
-        GroupedCommand(CommandGroup.SYSTEM, Command.HEART_BEAT)) shouldBe "system/heart_beat"
-  }
-
   "should convert empty string to empty message" {
-    JSON.Str2MessageConverter().convert("") shouldBe Message(mapOf())
+    JSON.Str2MessageConverter().convert("") shouldBe Message()
   }
 
   "should convert key=value to message" {
     JSON.Str2MessageConverter().convert("foo=bar") shouldBe
-        Message(mapOf("foo" to listOf("bar")))
+        Message.Builder().add("foo", "bar").build()
   }
 
   "should convert multiple key=value to message" {
     JSON.Str2MessageConverter().convert("foo=bar&foo1=bar1") shouldBe
-        Message(mapOf("foo" to listOf("bar"), "foo1" to listOf("bar1")))
+        Message.Builder()
+            .add("foo", "bar")
+            .add("foo1", "bar1")
+            .build()
   }
 
   "should convert multiple key=value with duplicated key to message" {
-    JSON.Str2MessageConverter().convert("foo=bar&foo=bar1") shouldBe
-        Message(mapOf("foo" to listOf("bar", "bar1")))
+    JSON.Str2MessageConverter().convert("foo=bar&foo=bar1&foo=bar2") shouldBe
+        Message.Builder()
+            .add("foo", listOf("bar", "bar1"))
+            .add("foo", "bar2")
+            .build()
   }
 
   "should convert key to message" {
     JSON.Str2MessageConverter().convert("foo") shouldBe
-        Message(mapOf("foo" to listOf()))
+        Message.Builder().add("foo").build()
   }
 
   "should convert multiple keys to message" {
     JSON.Str2MessageConverter().convert("foo&bar") shouldBe
-        Message(mapOf("foo" to listOf(), "bar" to listOf()))
+        Message.Builder()
+            .add("foo")
+            .add("bar")
+            .build()
   }
 
   "should convert combination to message" {
     JSON.Str2MessageConverter().convert("foo&foo1=bar") shouldBe
-        Message(mapOf("foo" to listOf(), "foo1" to listOf("bar")))
-  }
-
-  "should convert empty message to empty string" {
-    JSON.Message2StrConverter().convert(Message(mapOf())) shouldBe ""
-  }
-
-  "should convert message to string" {
-    JSON.Message2StrConverter().convert(Message(mapOf(
-        "foo" to listOf(),
-        "foo1" to listOf("bar1", "bar2"))
-    )) shouldBe "foo&foo1=bar1&foo1=bar2"
+        Message.Builder()
+            .add("foo")
+            .add("foo1", "bar")
+            .build()
   }
 })

@@ -20,7 +20,26 @@ package io.honnix.kheos.lib
 data class HeosCommandException(val eid: Int, val text: String) : Exception(text) {
   companion object {
     fun build(message: Message) =
-        HeosCommandException(message.value("eid")!!.toInt(),
-            message.value("text")!!)
+        HeosCommandException(message.value("eid")?.toInt() ?: -1,
+            message.value("text") ?: "no error message")
   }
+}
+
+enum class ErrorCode {
+  SUCCESS,
+  UNRECOGNIZED_COMMAND,
+  INVALID_ID,
+  WROING_NUMBER_OF_COMMAND_ARGUMENTS,
+  REQUESTED_DATA_NOT_AVAILABLE,
+  RESOURCE_CURRENTLY_NOT_AVAILABLE,
+  INVALID_CREDENTIALS,
+  COMMAND_COULD_NOT_BE_EXECUTED,
+  USER_NOT_LOGGED_IN,
+  PARAMETER_OUT_OF_RANGE,
+  USER_NOT_FOUND,
+  INTERNAL_ERROR,
+  SYSTEM_ERROR,
+  PROCESSING_PREVIOUS_COMMAND,
+  MEDIA_CANNOT_BE_PLAYED,
+  OPTION_NO_SUPPORTED
 }

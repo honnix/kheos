@@ -17,8 +17,14 @@
  */
 package io.honnix.kheos.lib
 
+import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
+import io.honnix.kheos.lib.Command.HEART_BEAT
+import io.honnix.kheos.lib.Command.SIGN_IN
+import io.honnix.kheos.lib.Command.SIGN_OUT
+import io.honnix.kheos.lib.CommandGroup.SYSTEM
 import io.kotlintest.TestCaseContext
 import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.shouldThrow
 import io.kotlintest.mock.`when`
 import io.kotlintest.mock.mock
 import io.kotlintest.specs.StringSpec
@@ -35,6 +41,16 @@ class HeosClientImplTest : StringSpec() {
 
   override val oneInstancePerTest = false
 
+  private fun prepareInputOutput(response: GenericResponse): Pair<ByteArrayInputStream, ByteArrayOutputStream> {
+    val input = ByteArrayInputStream(JSON.serialize(response))
+    `when`(socket.getInputStream()).thenReturn(input)
+
+    val output = ByteArrayOutputStream()
+    `when`(socket.getOutputStream()).thenReturn(output)
+
+    return Pair(input, output)
+  }
+
   override fun interceptTestCase(context: TestCaseContext, test: () -> Unit) {
     scheduler = DeterministicScheduler()
     socket = mock<Socket>()
@@ -46,19 +62,83 @@ class HeosClientImplTest : StringSpec() {
   init {
     "should schedule heartbeat" {
       val response = HeartbeatResponse(
-          Status(GroupedCommand(CommandGroup.SYSTEM, Command.HEART_BEAT),
+          Status(GroupedCommand(SYSTEM, HEART_BEAT),
               Result.SUCCESS, Message(mapOf())))
 
-      val input = ByteArrayInputStream(JSON.serialize(response))
-      `when`(socket.getInputStream()).thenReturn(input)
-
-      val output = ByteArrayOutputStream()
-      `when`(socket.getOutputStream()).thenReturn(output)
+      val (input, output) = prepareInputOutput(response)
 
       heosClient.startHeartbeat()
       scheduler.tick(5, TimeUnit.SECONDS)
 
       input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/heart_beat\r\n"
+    }
+
+    "should successfully check account" {
+      val expectedResponse = CheckAccountResponse(
+          Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
+              Result.SUCCESS, Message()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.checkAccount()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/check_account\r\n"
+    }
+
+    "should fail to check account" {
+      val response = CheckAccountResponse(
+          Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
+              Result.FAIL, Message.Builder()
+              .add("eid", ErrorCode.INTERNAL_ERROR.ordinal.toString())
+              .add("text", "System Internal Error")
+              .build()))
+
+      val (input, output) = prepareInputOutput(response)
+
+      val exception = shouldThrow<HeosCommandException> {
+        heosClient.checkAccount()
+      }
+      exception.eid shouldBe ErrorCode.INTERNAL_ERROR.ordinal
+      exception.text shouldBe "System Internal Error"
+
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/check_account\r\n"
+    }
+
+    "should successfully sign in" {
+      val expectedResponse = SignInResponse(
+          Status(GroupedCommand(SYSTEM, SIGN_IN),
+              Result.SUCCESS, Message.Builder()
+              .add("signed_in")
+              .add("un", "user@example.com")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.signIn("user@example.com", "bar")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/sign_in?un=user@example.com&pw=bar\r\n"
+    }
+
+    "should successfully sign out" {
+      val expectedResponse = SignOutResponse(
+          Status(GroupedCommand(SYSTEM, SIGN_OUT),
+              Result.SUCCESS, Message.Builder()
+              .add("signed_out")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.signOut()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/sign_out\r\n"
     }
   }
 }

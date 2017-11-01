@@ -21,21 +21,19 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import io.honnix.kheos.lib.JSON.GroupedCommand2StrConverter
-import io.honnix.kheos.lib.JSON.Message2StrConverter
 import io.honnix.kheos.lib.JSON.Str2GroupedCommandConverter
 import io.honnix.kheos.lib.JSON.Str2MessageConverter
 
 data class GroupedCommand(val group: CommandGroup, val command: Command) {
-  override fun toString(): String {
-    return "${group.group}/${command.command}"
-  }
+  @JsonValue
+  override fun toString() = "${group.group}/${command.command}"
 }
 
 enum class Command(val command: String) {
   HEART_BEAT("heart_beat"),
-  CHECK_ACCOUNT("check_account");
+  CHECK_ACCOUNT("check_account"),
+  SIGN_IN("sign_in"),
+  SIGN_OUT("sign_out");
 
   @JsonValue
   override fun toString() = command
@@ -75,21 +73,53 @@ enum class Result(private val status: String) {
 }
 
 data class Message(private val content: Map<String, List<String>>) {
+  constructor() : this(mapOf())
+  
   fun values(name: String): List<String>? = content[name]
 
   fun value(name: String): String? {
     return values(name)?.firstOrNull()
   }
 
-  fun names() = content.keys
+  fun isEmpty() = content.isEmpty()
+
+  fun isNotEmpty() = content.isNotEmpty()
+
+  @JsonValue
+  override fun toString() = content.keys.joinToString("&") { x ->
+    val values = values(x)!!
+    if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
+  }
+
+  class Builder {
+    private var map = mutableMapOf<String, List<String>>()
+
+    fun add(name: String): Builder {
+      add(name, listOf())
+      return this
+    }
+
+    fun add(name: String, value: String): Builder {
+      add(name, listOf(value))
+      return this
+    }
+
+    fun add(name: String, value: List<String>): Builder {
+      map.merge(name, value, { x, y -> x + y })
+      return this
+    }
+
+    fun build() = Message(map.toMap())
+  }
 }
 
+typealias Attributes = Message
+typealias AttributesBuilder = Message.Builder
+
 data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
-                  @JsonSerialize(converter = GroupedCommand2StrConverter::class)
                   val command: GroupedCommand,
                   val result: Result,
                   @JsonDeserialize(converter = Str2MessageConverter::class)
-                  @JsonSerialize(converter = Message2StrConverter::class)
                   val message: Message)
 
 interface GenericResponse {
@@ -99,3 +129,7 @@ interface GenericResponse {
 data class HeartbeatResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class CheckAccountResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SignInResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
