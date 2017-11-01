@@ -34,6 +34,12 @@ import java.util.concurrent.TimeUnit
 const val HEOS_PORT = 1255
 
 interface HeosClient {
+  companion object {
+    fun newInstance(host: String): HeosClient {
+      return HeosClientImpl(host)
+    }
+  }
+
   fun startHeartbeat()
 
   fun stopHeartbeat()
@@ -45,12 +51,6 @@ interface HeosClient {
   fun signIn(userName: String, password: String): SignInResponse
 
   fun signOut(): SignOutResponse
-
-  companion object {
-    fun newInstance(host: String): HeosClient {
-      return HeosClientImpl(host)
-    }
-  }
 }
 
 internal class HeosClientImpl(host: String,

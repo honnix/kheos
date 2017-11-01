@@ -35,6 +35,17 @@ import java.net.Socket
 import java.util.concurrent.TimeUnit
 
 class HeosClientImplTest : StringSpec() {
+  private class QuietDeterministicScheduler : DeterministicScheduler() {
+    private var isShutdown = false
+
+    override fun shutdownNow(): MutableList<Runnable> {
+      isShutdown = true
+      return mutableListOf()
+    }
+
+    override fun isShutdown() = isShutdown
+  }
+
   private lateinit var scheduler: DeterministicScheduler
   private lateinit var heosClient: HeosClient
   private lateinit var socket: Socket
@@ -52,7 +63,7 @@ class HeosClientImplTest : StringSpec() {
   }
 
   override fun interceptTestCase(context: TestCaseContext, test: () -> Unit) {
-    scheduler = DeterministicScheduler()
+    scheduler = QuietDeterministicScheduler()
     socket = mock<Socket>()
     heosClient = HeosClientImpl("localhost", { socket }, scheduler)
 
@@ -72,6 +83,9 @@ class HeosClientImplTest : StringSpec() {
 
       input.available() shouldBe 0
       output.toString() shouldBe "heos://system/heart_beat\r\n"
+
+      heosClient.stopHeartbeat()
+      scheduler.isShutdown shouldBe true
     }
 
     "should successfully check account" {

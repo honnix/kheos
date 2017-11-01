@@ -23,8 +23,6 @@ import com.fasterxml.jackson.module.kotlin.KotlinModule
 
 
 object JSON {
-  val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
-
   class Str2GroupedCommandConverter : StdConverter<String, GroupedCommand>() {
     override fun convert(value: String): GroupedCommand {
       val parts = value.split("/")
@@ -44,6 +42,8 @@ object JSON {
         }))
     }
   }
+
+  val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
 
   fun serialize(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 }

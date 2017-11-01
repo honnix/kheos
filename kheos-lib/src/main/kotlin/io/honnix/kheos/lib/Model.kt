@@ -35,13 +35,13 @@ enum class Command(val command: String) {
   SIGN_IN("sign_in"),
   SIGN_OUT("sign_out");
 
-  @JsonValue
-  override fun toString() = command
-
   companion object {
     @JsonCreator
     fun from(command: String) = Command.valueOf(command.toUpperCase())
   }
+
+  @JsonValue
+  override fun toString() = command
 }
 
 enum class CommandGroup(val group: String) {
@@ -50,46 +50,30 @@ enum class CommandGroup(val group: String) {
   GROUP("group"),
   BROWSE("browse");
 
-  @JsonValue
-  override fun toString() = group
-
   companion object {
     @JsonCreator
     fun from(group: String) = CommandGroup.valueOf(group.toUpperCase())
   }
+
+  @JsonValue
+  override fun toString() = group
 }
 
 enum class Result(private val status: String) {
   SUCCESS("success"),
   FAIL("fail");
 
-  @JsonValue
-  override fun toString() = status
-
   companion object {
     @JsonCreator
     fun from(status: String) = Result.valueOf(status.toUpperCase())
   }
+
+  @JsonValue
+  override fun toString() = status
 }
 
 data class Message(private val content: Map<String, List<String>>) {
   constructor() : this(mapOf())
-  
-  fun values(name: String): List<String>? = content[name]
-
-  fun value(name: String): String? {
-    return values(name)?.firstOrNull()
-  }
-
-  fun isEmpty() = content.isEmpty()
-
-  fun isNotEmpty() = content.isNotEmpty()
-
-  @JsonValue
-  override fun toString() = content.keys.joinToString("&") { x ->
-    val values = values(x)!!
-    if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
-  }
 
   class Builder {
     private var map = mutableMapOf<String, List<String>>()
@@ -110,6 +94,22 @@ data class Message(private val content: Map<String, List<String>>) {
     }
 
     fun build() = Message(map.toMap())
+  }
+
+  fun values(name: String): List<String>? = content[name]
+
+  fun value(name: String): String? {
+    return values(name)?.firstOrNull()
+  }
+
+  fun isEmpty() = content.isEmpty()
+
+  fun isNotEmpty() = content.isNotEmpty()
+
+  @JsonValue
+  override fun toString() = content.keys.joinToString("&") { x ->
+    val values = values(x)!!
+    if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
   }
 }
 
