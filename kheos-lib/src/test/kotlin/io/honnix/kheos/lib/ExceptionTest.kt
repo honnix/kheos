@@ -17,6 +17,7 @@
  */
 package io.honnix.kheos.lib
 
+import io.kotlintest.matchers.shouldBe
 import io.kotlintest.properties.forAll
 import io.kotlintest.specs.StringSpec
 
@@ -24,8 +25,15 @@ class HeosCommandExceptionTest : StringSpec({
   "should build correct exception from message" {
     forAll({ eid: Int, text: String ->
       HeosCommandException.build(
-          Message(mapOf("eid" to listOf(eid.toString()), "text" to listOf(text)))
+          Message.Builder()
+              .add("eid", eid.toString())
+              .add("text", text)
+              .build()
       ) == HeosCommandException(eid, text)
     })
+  }
+
+  "should build correct exception with fallback eid and test from message" {
+    HeosCommandException.build(Message()) shouldBe HeosCommandException(-1, "no error message")
   }
 })

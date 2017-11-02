@@ -96,20 +96,18 @@ data class Message(private val content: Map<String, List<String>>) {
     fun build() = Message(map.toMap())
   }
 
-  fun values(name: String): List<String>? = content[name]
+  fun values(name: String) = content[name]
 
-  fun value(name: String): String? {
-    return values(name)?.firstOrNull()
-  }
+  fun value(name: String) = values(name)?.firstOrNull()
 
   fun isEmpty() = content.isEmpty()
 
   fun isNotEmpty() = content.isNotEmpty()
 
   @JsonValue
-  override fun toString() = content.keys.joinToString("&") { x ->
-    val values = values(x)!!
-    if (values.isEmpty()) x else values.joinToString("&") { y -> "$x=$y" }
+  override fun toString() = content.entries.joinToString("&") { entry ->
+    if (entry.value.isEmpty()) entry.key
+    else entry.value.joinToString("&") { value -> "${entry.key}=$value" }
   }
 }
 
