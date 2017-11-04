@@ -17,18 +17,8 @@
  */
 package io.honnix.kheos.lib
 
-import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
-import io.honnix.kheos.lib.Command.GET_NOW_PLAYING_MEDIA
-import io.honnix.kheos.lib.Command.GET_PLAYERS
-import io.honnix.kheos.lib.Command.GET_PLAYER_INFO
-import io.honnix.kheos.lib.Command.GET_PLAY_STATE
-import io.honnix.kheos.lib.Command.HEART_BEAT
-import io.honnix.kheos.lib.Command.REBOOT
-import io.honnix.kheos.lib.Command.SET_PLAY_STATE
-import io.honnix.kheos.lib.Command.SIGN_IN
-import io.honnix.kheos.lib.Command.SIGN_OUT
-import io.honnix.kheos.lib.CommandGroup.PLAYER
-import io.honnix.kheos.lib.CommandGroup.SYSTEM
+import io.honnix.kheos.lib.Command.*
+import io.honnix.kheos.lib.CommandGroup.*
 import io.honnix.kheos.lib.Control.NETWORK
 import io.honnix.kheos.lib.MediaType.STATION
 import io.honnix.kheos.lib.PlayState.PLAY
