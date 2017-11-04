@@ -19,6 +19,7 @@ package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
 import io.honnix.kheos.lib.Command.HEART_BEAT
+import io.honnix.kheos.lib.Command.REBOOT
 import io.honnix.kheos.lib.Command.SIGN_IN
 import io.honnix.kheos.lib.Command.SIGN_OUT
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
@@ -32,12 +33,11 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
 const val HEOS_PORT = 1255
+const val COMMAND_DELIMITER = "\r\n"
 
 interface HeosClient {
   companion object {
-    fun newInstance(host: String): HeosClient {
-      return HeosClientImpl(host)
-    }
+    fun newInstance(host: String): HeosClient = HeosClientImpl(host)
   }
 
   fun startHeartbeat()
@@ -51,6 +51,8 @@ interface HeosClient {
   fun signIn(userName: String, password: String): SignInResponse
 
   fun signOut(): SignOutResponse
+
+  fun reboot(): RebootResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -64,9 +66,11 @@ internal class HeosClientImpl(host: String,
 
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
                                                                attributes: Attributes = Attributes(mapOf())): T {
-    output.printf("${mkCommand(command, attributes)}\r\n")
+    output.printf("${mkCommand(command, attributes)}$COMMAND_DELIMITER")
+
     val rawResponse = input.readLine()
     logger.debug(rawResponse)
+
     val response = JSON.mapper.readValue(rawResponse, T::class.java)
 
     if (response.status.result === Result.FAIL) {
@@ -114,4 +118,7 @@ internal class HeosClientImpl(host: String,
 
   override fun signOut(): SignOutResponse =
       sendCommand(GroupedCommand(SYSTEM, SIGN_OUT))
+
+  override fun reboot(): RebootResponse =
+      sendCommand(GroupedCommand(SYSTEM, REBOOT))
 }

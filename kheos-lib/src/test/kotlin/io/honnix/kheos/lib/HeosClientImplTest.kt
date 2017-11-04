@@ -19,6 +19,7 @@ package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
 import io.honnix.kheos.lib.Command.HEART_BEAT
+import io.honnix.kheos.lib.Command.REBOOT
 import io.honnix.kheos.lib.Command.SIGN_IN
 import io.honnix.kheos.lib.Command.SIGN_OUT
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
@@ -71,6 +72,10 @@ class HeosClientImplTest : StringSpec() {
   }
 
   init {
+    "should create an instance of HeosClientImpl" {
+      HeosClient.newInstance("localhost")::class shouldBe HeosClientImpl::class
+    }
+
     "should schedule heartbeat" {
       val response = HeartbeatResponse(
           Status(GroupedCommand(SYSTEM, HEART_BEAT),
@@ -82,7 +87,7 @@ class HeosClientImplTest : StringSpec() {
       scheduler.tick(5, TimeUnit.SECONDS)
 
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://system/heart_beat\r\n"
+      output.toString() shouldBe "heos://system/heart_beat$COMMAND_DELIMITER"
 
       heosClient.stopHeartbeat()
       scheduler.isShutdown shouldBe true
@@ -99,7 +104,7 @@ class HeosClientImplTest : StringSpec() {
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://system/check_account\r\n"
+      output.toString() shouldBe "heos://system/check_account$COMMAND_DELIMITER"
     }
 
     "should fail to check account" {
@@ -119,7 +124,7 @@ class HeosClientImplTest : StringSpec() {
       exception.text shouldBe "System Internal Error"
 
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://system/check_account\r\n"
+      output.toString() shouldBe "heos://system/check_account$COMMAND_DELIMITER"
     }
 
     "should successfully sign in" {
@@ -136,7 +141,7 @@ class HeosClientImplTest : StringSpec() {
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://system/sign_in?un=user@example.com&pw=bar\r\n"
+      output.toString() shouldBe "heos://system/sign_in?un=user@example.com&pw=bar$COMMAND_DELIMITER"
     }
 
     "should successfully sign out" {
@@ -152,7 +157,21 @@ class HeosClientImplTest : StringSpec() {
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://system/sign_out\r\n"
+      output.toString() shouldBe "heos://system/sign_out$COMMAND_DELIMITER"
+    }
+
+    "should successfully reboot" {
+      val expectedResponse = RebootResponse(
+          Status(GroupedCommand(SYSTEM, REBOOT),
+              Result.SUCCESS, Message()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.reboot()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/reboot$COMMAND_DELIMITER"
     }
   }
 }

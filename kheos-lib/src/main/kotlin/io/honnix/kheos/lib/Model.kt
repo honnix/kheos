@@ -33,7 +33,8 @@ enum class Command(val command: String) {
   HEART_BEAT("heart_beat"),
   CHECK_ACCOUNT("check_account"),
   SIGN_IN("sign_in"),
-  SIGN_OUT("sign_out");
+  SIGN_OUT("sign_out"),
+  REBOOT("reboot");
 
   companion object {
     @JsonCreator
@@ -131,3 +132,5 @@ data class CheckAccountResponse(@JsonProperty("heos") override val status: Statu
 data class SignInResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RebootResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
