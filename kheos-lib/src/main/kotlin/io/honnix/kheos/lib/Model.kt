@@ -34,7 +34,11 @@ enum class Command(val command: String) {
   CHECK_ACCOUNT("check_account"),
   SIGN_IN("sign_in"),
   SIGN_OUT("sign_out"),
-  REBOOT("reboot");
+  REBOOT("reboot"),
+  GET_PLAYERS("get_players"),
+  GET_PLAYER_INFO("get_player_info"),
+  GET_PLAY_STATE("get_play_state"),
+  SET_PLAY_STATE("set_play_state");
 
   companion object {
     @JsonCreator
@@ -71,6 +75,48 @@ enum class Result(private val status: String) {
 
   @JsonValue
   override fun toString() = status
+}
+
+enum class Lineout(@JsonValue val type: Int) {
+  UNKNOWN(0),
+  VARIABLE(1),
+  FIXED(2);
+
+  companion object {
+    @JsonCreator
+    fun from(type: Int) = Lineout.values().find { x -> x.type == type } ?: UNKNOWN
+  }
+
+  override fun toString() = type.toString()
+}
+
+enum class Control(@JsonValue val option: Int) {
+  UNKNOWN(0),
+  NONE(1),
+  IR(2),
+  TRIGGER(3),
+  NETWORK(4);
+
+  companion object {
+    @JsonCreator
+    fun from(option: Int) = Control.values().find { x -> x.option == option } ?: UNKNOWN
+  }
+
+  override fun toString() = option.toString()
+}
+
+enum class PlayState(val state: String) {
+  PLAY("play"),
+  PAUSE("pause"),
+  STOP("Stop");
+
+  companion object {
+    @JsonCreator
+    fun from(state: String) = PlayState.valueOf(state.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = state
 }
 
 data class Message(private val content: Map<String, List<String>>) {
@@ -134,3 +180,18 @@ data class SignInResponse(@JsonProperty("heos") override val status: Status) : G
 data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class RebootResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class Player(val name: String, val pid: String,
+                  val model: String, val version: String, val ip: String,
+                  val network: String, val lineout: Lineout,
+                  val gid: String? = null, val control: Control? = null)
+
+data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
+                              val payload: List<Player>) : GenericResponse
+
+data class GetPlayerInfoResponse(@JsonProperty("heos") override val status: Status,
+                                 val payload: Player) : GenericResponse
+
+data class GetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

@@ -18,11 +18,18 @@
 package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
+import io.honnix.kheos.lib.Command.GET_PLAYERS
+import io.honnix.kheos.lib.Command.GET_PLAYER_INFO
+import io.honnix.kheos.lib.Command.GET_PLAY_STATE
 import io.honnix.kheos.lib.Command.HEART_BEAT
 import io.honnix.kheos.lib.Command.REBOOT
+import io.honnix.kheos.lib.Command.SET_PLAY_STATE
 import io.honnix.kheos.lib.Command.SIGN_IN
 import io.honnix.kheos.lib.Command.SIGN_OUT
+import io.honnix.kheos.lib.CommandGroup.PLAYER
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
+import io.honnix.kheos.lib.Control.NETWORK
+import io.honnix.kheos.lib.PlayState.PLAY
 import io.kotlintest.TestCaseContext
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
@@ -93,7 +100,7 @@ class HeosClientImplTest : StringSpec() {
       scheduler.isShutdown shouldBe true
     }
 
-    "should successfully check account" {
+    "should check account" {
       val expectedResponse = CheckAccountResponse(
           Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.SUCCESS, Message()))
@@ -127,7 +134,7 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://system/check_account$COMMAND_DELIMITER"
     }
 
-    "should successfully sign in" {
+    "should sign in" {
       val expectedResponse = SignInResponse(
           Status(GroupedCommand(SYSTEM, SIGN_IN),
               Result.SUCCESS, Message.Builder()
@@ -144,7 +151,7 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://system/sign_in?un=user@example.com&pw=bar$COMMAND_DELIMITER"
     }
 
-    "should successfully sign out" {
+    "should sign out" {
       val expectedResponse = SignOutResponse(
           Status(GroupedCommand(SYSTEM, SIGN_OUT),
               Result.SUCCESS, Message.Builder()
@@ -160,7 +167,7 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://system/sign_out$COMMAND_DELIMITER"
     }
 
-    "should successfully reboot" {
+    "should reboot" {
       val expectedResponse = RebootResponse(
           Status(GroupedCommand(SYSTEM, REBOOT),
               Result.SUCCESS, Message()))
@@ -172,6 +179,76 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://system/reboot$COMMAND_DELIMITER"
+    }
+
+    "should get all players" {
+      val expectedResponse = GetPlayersResponse(
+          Status(GroupedCommand(PLAYER, GET_PLAYERS),
+              Result.SUCCESS, Message()),
+          listOf(
+              Player("name0", "0", "model0",
+                  "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE),
+              Player("name1", "1", "model1",
+                  "0.1", "192.168.1.101", "wifi", Lineout.FIXED,
+                  "100", NETWORK)))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getPlayers()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_players$COMMAND_DELIMITER"
+    }
+
+    "should get player info" {
+      val expectedResponse = GetPlayerInfoResponse(
+          Status(GroupedCommand(PLAYER, GET_PLAYER_INFO),
+              Result.SUCCESS, Message()),
+          Player("name0", "0", "model0",
+              "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getPlayerInfo("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_player_info?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should get play state" {
+      val expectedResponse = GetPlayStateResponse(
+          Status(GroupedCommand(PLAYER, GET_PLAY_STATE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("state", "play")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getPlayState("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_play_state?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should set play state" {
+      val expectedResponse = SetPlayStateResponse(
+          Status(GroupedCommand(PLAYER, SET_PLAY_STATE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("state", "play")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setPlayState("0", PLAY)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_play_state?pid=0&state=play$COMMAND_DELIMITER"
     }
   }
 }

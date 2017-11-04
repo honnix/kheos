@@ -18,10 +18,15 @@
 package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
+import io.honnix.kheos.lib.Command.GET_PLAYERS
+import io.honnix.kheos.lib.Command.GET_PLAYER_INFO
+import io.honnix.kheos.lib.Command.GET_PLAY_STATE
 import io.honnix.kheos.lib.Command.HEART_BEAT
 import io.honnix.kheos.lib.Command.REBOOT
+import io.honnix.kheos.lib.Command.SET_PLAY_STATE
 import io.honnix.kheos.lib.Command.SIGN_IN
 import io.honnix.kheos.lib.Command.SIGN_OUT
+import io.honnix.kheos.lib.CommandGroup.PLAYER
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
@@ -53,6 +58,14 @@ interface HeosClient {
   fun signOut(): SignOutResponse
 
   fun reboot(): RebootResponse
+
+  fun getPlayers(): GetPlayersResponse
+
+  fun getPlayerInfo(pid: String): GetPlayerInfoResponse
+
+  fun getPlayState(pid: String): GetPlayStateResponse
+
+  fun setPlayState(pid: String, state: PlayState): SetPlayStateResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -121,4 +134,22 @@ internal class HeosClientImpl(host: String,
 
   override fun reboot(): RebootResponse =
       sendCommand(GroupedCommand(SYSTEM, REBOOT))
+
+  override fun getPlayers(): GetPlayersResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_PLAYERS))
+
+  override fun getPlayerInfo(pid: String): GetPlayerInfoResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_PLAYER_INFO),
+          AttributesBuilder().add("pid", pid).build())
+
+  override fun getPlayState(pid: String): GetPlayStateResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_PLAY_STATE),
+          AttributesBuilder().add("pid", pid).build())
+
+  override fun setPlayState(pid: String, state: PlayState): SetPlayStateResponse =
+      sendCommand(GroupedCommand(PLAYER, SET_PLAY_STATE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("state", state.toString())
+              .build())
 }
