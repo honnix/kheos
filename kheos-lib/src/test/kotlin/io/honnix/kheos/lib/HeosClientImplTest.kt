@@ -18,6 +18,7 @@
 package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
+import io.honnix.kheos.lib.Command.GET_NOW_PLAYING_MEDIA
 import io.honnix.kheos.lib.Command.GET_PLAYERS
 import io.honnix.kheos.lib.Command.GET_PLAYER_INFO
 import io.honnix.kheos.lib.Command.GET_PLAY_STATE
@@ -29,6 +30,7 @@ import io.honnix.kheos.lib.Command.SIGN_OUT
 import io.honnix.kheos.lib.CommandGroup.PLAYER
 import io.honnix.kheos.lib.CommandGroup.SYSTEM
 import io.honnix.kheos.lib.Control.NETWORK
+import io.honnix.kheos.lib.MediaType.STATION
 import io.honnix.kheos.lib.PlayState.PLAY
 import io.kotlintest.TestCaseContext
 import io.kotlintest.matchers.shouldBe
@@ -40,6 +42,7 @@ import org.jmock.lib.concurrent.DeterministicScheduler
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.Socket
+import java.net.URL
 import java.util.concurrent.TimeUnit
 
 class HeosClientImplTest : StringSpec() {
@@ -249,6 +252,27 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/set_play_state?pid=0&state=play$COMMAND_DELIMITER"
+    }
+
+    "should get now playing meida" {
+      val expectedResponse = GetNowPlayingMediaResponse(
+          Status(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()),
+          Media(STATION, "song", "album", "artist",
+              URL("http://example.com"), "0", "0", "0", "0",
+              station = "station"),
+          listOf(mapOf("play" to
+              listOf(mapOf("id" to "19", "name" to "Add to HEOS Favorites")))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getNowPlayingMedia("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_now_playing_media?pid=0$COMMAND_DELIMITER"
     }
   }
 }

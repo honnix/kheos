@@ -18,6 +18,7 @@
 package io.honnix.kheos.lib
 
 import io.honnix.kheos.lib.Command.CHECK_ACCOUNT
+import io.honnix.kheos.lib.Command.GET_NOW_PLAYING_MEDIA
 import io.honnix.kheos.lib.Command.GET_PLAYERS
 import io.honnix.kheos.lib.Command.GET_PLAYER_INFO
 import io.honnix.kheos.lib.Command.GET_PLAY_STATE
@@ -66,6 +67,8 @@ interface HeosClient {
   fun getPlayState(pid: String): GetPlayStateResponse
 
   fun setPlayState(pid: String, state: PlayState): SetPlayStateResponse
+
+  fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -152,4 +155,8 @@ internal class HeosClientImpl(host: String,
               .add("pid", pid)
               .add("state", state.toString())
               .build())
+
+  override fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
+          AttributesBuilder().add("pid", pid).build())
 }

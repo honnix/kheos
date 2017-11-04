@@ -20,6 +20,6 @@ package io.honnix.kheos.lib
 fun main(args: Array<String>) {
   val c = HeosClient.newInstance("192.168.17.219")
   c.startHeartbeat()
-  println(c.setPlayState("1723431415", PlayState.PLAY))
+  println(c.getNowPlayingMedia("1723431415"))
   c.stopHeartbeat()
 }

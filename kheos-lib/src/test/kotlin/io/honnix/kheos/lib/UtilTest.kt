@@ -19,6 +19,7 @@ package io.honnix.kheos.lib
 
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.specs.StringSpec
+import java.net.URL
 
 class JSONTest : StringSpec({
   "should convert string to command" {
@@ -70,5 +71,14 @@ class JSONTest : StringSpec({
             .add("foo")
             .add("foo1", "bar")
             .build()
+  }
+
+  "should convert empty string to null" {
+    JSON.Str2URLConverter().convert("") shouldBe null
+  }
+
+  "should convert string to URL" {
+    JSON.Str2URLConverter().convert("http://example.com") shouldBe
+        URL("http://example.com")
   }
 })

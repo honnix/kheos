@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonValue
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import io.honnix.kheos.lib.JSON.Str2GroupedCommandConverter
 import io.honnix.kheos.lib.JSON.Str2MessageConverter
+import io.honnix.kheos.lib.JSON.Str2URLConverter
+import java.net.URL
 
 data class GroupedCommand(val group: CommandGroup, val command: Command) {
   @JsonValue
@@ -38,7 +40,8 @@ enum class Command(val command: String) {
   GET_PLAYERS("get_players"),
   GET_PLAYER_INFO("get_player_info"),
   GET_PLAY_STATE("get_play_state"),
-  SET_PLAY_STATE("set_play_state");
+  SET_PLAY_STATE("set_play_state"),
+  GET_NOW_PLAYING_MEDIA("get_now_playing_media");
 
   companion object {
     @JsonCreator
@@ -119,6 +122,19 @@ enum class PlayState(val state: String) {
   override fun toString() = state
 }
 
+enum class MediaType(val type: String) {
+  STATION("station"),
+  SONG("song");
+
+  companion object {
+    @JsonCreator
+    fun from(type: String) = MediaType.valueOf(type.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = type
+}
+
 data class Message(private val content: Map<String, List<String>>) {
   constructor() : this(mapOf())
 
@@ -160,6 +176,7 @@ data class Message(private val content: Map<String, List<String>>) {
 
 typealias Attributes = Message
 typealias AttributesBuilder = Message.Builder
+typealias Options = List<Map<String, List<Map<String, String>>>>
 
 data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
                   val command: GroupedCommand,
@@ -186,6 +203,12 @@ data class Player(val name: String, val pid: String,
                   val network: String, val lineout: Lineout,
                   val gid: String? = null, val control: Control? = null)
 
+data class Media(val type: MediaType, val song: String,
+                 val album: String, val artist: String,
+                 @JsonDeserialize(converter = Str2URLConverter::class) val imageUrl: URL?,
+                 val albumId: String, val mid: String, val qid: String,
+                 val sid: String, val station: String? = null)
+
 data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
                               val payload: List<Player>) : GenericResponse
 
@@ -195,3 +218,6 @@ data class GetPlayerInfoResponse(@JsonProperty("heos") override val status: Stat
 data class GetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class SetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetNowPlayingMediaResponse(@JsonProperty("heos") override val status: Status,
+                                      val payload: Media, val options: Options = listOf()) : GenericResponse

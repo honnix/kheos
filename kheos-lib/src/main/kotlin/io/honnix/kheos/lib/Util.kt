@@ -18,32 +18,39 @@
 package io.honnix.kheos.lib
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategy.SNAKE_CASE
 import com.fasterxml.jackson.databind.util.StdConverter
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import java.net.URL
 
 
 object JSON {
-  class Str2GroupedCommandConverter : StdConverter<String, GroupedCommand>() {
+  internal class Str2GroupedCommandConverter : StdConverter<String, GroupedCommand>() {
     override fun convert(value: String): GroupedCommand {
       val parts = value.split("/")
       return GroupedCommand(CommandGroup.from(parts[0]), Command.from(parts[1]))
     }
   }
 
-  class Str2MessageConverter : StdConverter<String, Message>() {
-    override fun convert(value: String): Message {
-      return if (value.isEmpty()) Message(mapOf())
-      else
-        Message(value.split("&").map { x ->
-          val parts = x.split("=")
-          parts[0] to if (parts.size > 1) listOf(parts[1]) else listOf()
-        }.fold(mapOf(), { acc, x ->
-          acc + (x.first to acc.getOrElse(x.first, { listOf() }) + x.second)
-        }))
-    }
+  internal class Str2MessageConverter : StdConverter<String, Message>() {
+    override fun convert(value: String) =
+        if (value.isEmpty()) Message(mapOf())
+        else
+          Message(value.split("&").map { x ->
+            val parts = x.split("=")
+            parts[0] to if (parts.size > 1) listOf(parts[1]) else listOf()
+          }.fold(mapOf(), { acc, x ->
+            acc + (x.first to acc.getOrElse(x.first, { listOf() }) + x.second)
+          }))
   }
 
-  val mapper: ObjectMapper = ObjectMapper().registerModule(KotlinModule())
+  internal class Str2URLConverter : StdConverter<String, URL>() {
+    override fun convert(value: String) = if (value.isEmpty()) null else URL(value)
+  }
+
+  val mapper: ObjectMapper = ObjectMapper()
+      .setPropertyNamingStrategy(SNAKE_CASE)
+      .registerModule(KotlinModule())
 
   fun serialize(value: Any): ByteArray = mapper.writeValueAsBytes(value)
 }
