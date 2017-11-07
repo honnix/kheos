@@ -22,13 +22,13 @@ import io.honnix.kheos.lib.CommandGroup.*
 import io.honnix.kheos.lib.Control.NETWORK
 import io.honnix.kheos.lib.MediaType.STATION
 import io.honnix.kheos.lib.PlayState.PLAY
-import io.kotlintest.TestCaseContext
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
 import io.kotlintest.mock.`when`
 import io.kotlintest.mock.mock
 import io.kotlintest.specs.StringSpec
 import org.jmock.lib.concurrent.DeterministicScheduler
+import org.mockito.Mockito.*
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.Socket
@@ -47,11 +47,9 @@ class HeosClientImplTest : StringSpec() {
     override fun isShutdown() = isShutdown
   }
 
-  private lateinit var scheduler: DeterministicScheduler
-  private lateinit var heosClient: HeosClient
-  private lateinit var socket: Socket
-
-  override val oneInstancePerTest = false
+  private val scheduler = QuietDeterministicScheduler()
+  private val socket = mock<Socket>()
+  private val heosClient = HeosClientImpl("localhost", { socket }, scheduler)
 
   private fun prepareInputOutput(response: GenericResponse): Pair<ByteArrayInputStream, ByteArrayOutputStream> {
     val input = ByteArrayInputStream(JSON.serialize(response))
@@ -61,14 +59,6 @@ class HeosClientImplTest : StringSpec() {
     `when`(socket.getOutputStream()).thenReturn(output)
 
     return Pair(input, output)
-  }
-
-  override fun interceptTestCase(context: TestCaseContext, test: () -> Unit) {
-    scheduler = QuietDeterministicScheduler()
-    socket = mock<Socket>()
-    heosClient = HeosClientImpl("localhost", { socket }, scheduler)
-
-    test()
   }
 
   init {
@@ -93,6 +83,35 @@ class HeosClientImplTest : StringSpec() {
       scheduler.isShutdown shouldBe true
     }
 
+    "should fail heartbeat" {
+      val response = HeartbeatResponse(
+          Status(GroupedCommand(SYSTEM, HEART_BEAT),
+              Result.FAIL, Message.Builder()
+              .add("eid", ErrorId.INTERNAL_ERROR.eid.toString())
+              .add("text", "System Internal Error")
+              .build()))
+
+      val (input, output) = prepareInputOutput(response)
+
+      heosClient.startHeartbeat()
+      scheduler.tick(5, TimeUnit.SECONDS)
+
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://system/heart_beat$COMMAND_DELIMITER"
+
+      heosClient.stopHeartbeat()
+      scheduler.isShutdown shouldBe true
+    }
+
+    "should fail heartbeat badly" {
+      val output = mock<ByteArrayOutputStream>()
+      `when`(socket.getOutputStream()).thenReturn(output)
+      doThrow(RuntimeException()).`when`(output).write(any<ByteArray>(), anyInt(), anyInt())
+
+      heosClient.startHeartbeat()
+      scheduler.tick(5, TimeUnit.SECONDS)
+    }
+
     "should check account" {
       val expectedResponse = CheckAccountResponse(
           Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
@@ -111,7 +130,7 @@ class HeosClientImplTest : StringSpec() {
       val response = CheckAccountResponse(
           Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.FAIL, Message.Builder()
-              .add("eid", ErrorCode.INTERNAL_ERROR.ordinal.toString())
+              .add("eid", ErrorId.INTERNAL_ERROR.eid.toString())
               .add("text", "System Internal Error")
               .build()))
 
@@ -120,7 +139,7 @@ class HeosClientImplTest : StringSpec() {
       val exception = shouldThrow<HeosCommandException> {
         heosClient.checkAccount()
       }
-      exception.eid shouldBe ErrorCode.INTERNAL_ERROR.ordinal
+      exception.eid shouldBe ErrorId.INTERNAL_ERROR
       exception.text shouldBe "System Internal Error"
 
       input.available() shouldBe 0

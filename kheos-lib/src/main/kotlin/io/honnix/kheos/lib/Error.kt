@@ -17,29 +17,34 @@
  */
 package io.honnix.kheos.lib
 
-data class HeosCommandException(val eid: Int, val text: String) : Exception(text) {
+data class HeosCommandException(val eid: ErrorId, val text: String) :
+    Exception("eid: $eid, text: $text") {
   companion object {
     fun build(message: Message) =
-        HeosCommandException(message.value("eid")?.toInt() ?: -1,
+        HeosCommandException(ErrorId.from(message.value("eid")?.toInt()),
             message.value("text") ?: "no error message")
   }
 }
 
-enum class ErrorCode {
-  SUCCESS,
-  UNRECOGNIZED_COMMAND,
-  INVALID_ID,
-  WROING_NUMBER_OF_COMMAND_ARGUMENTS,
-  REQUESTED_DATA_NOT_AVAILABLE,
-  RESOURCE_CURRENTLY_NOT_AVAILABLE,
-  INVALID_CREDENTIALS,
-  COMMAND_COULD_NOT_BE_EXECUTED,
-  USER_NOT_LOGGED_IN,
-  PARAMETER_OUT_OF_RANGE,
-  USER_NOT_FOUND,
-  INTERNAL_ERROR,
-  SYSTEM_ERROR,
-  PROCESSING_PREVIOUS_COMMAND,
-  MEDIA_CANNOT_BE_PLAYED,
-  OPTION_NO_SUPPORTED
+enum class ErrorId(val eid: Int) {
+  UNKNOWN(0),
+  UNRECOGNIZED_COMMAND(1),
+  INVALID_ID(2),
+  WRONG_NUMBER_OF_COMMAND_ARGUMENTS(3),
+  REQUESTED_DATA_NOT_AVAILABLE(4),
+  RESOURCE_CURRENTLY_NOT_AVAILABLE(5),
+  INVALID_CREDENTIALS(6),
+  COMMAND_COULD_NOT_BE_EXECUTED(7),
+  USER_NOT_LOGGED_IN(8),
+  PARAMETER_OUT_OF_RANGE(9),
+  USER_NOT_FOUND(10),
+  INTERNAL_ERROR(11),
+  SYSTEM_ERROR(12),
+  PROCESSING_PREVIOUS_COMMAND(13),
+  MEDIA_CANNOT_BE_PLAYED(14),
+  OPTION_NO_SUPPORTED(15);
+
+  companion object {
+    fun from(eid: Int?) = ErrorId.values().find { x -> x.eid == eid } ?: UNKNOWN
+  }
 }

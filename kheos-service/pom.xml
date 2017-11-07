@@ -13,10 +13,39 @@
   <packaging>jar</packaging>
 
   <properties>
-    <service.main>io.honnix.kheos.service.KheosService</service.main>
+    <service.main>io.honnix.kheos.service.ServiceKt</service.main>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>io.honnix</groupId>
+      <artifactId>kheos-lib</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>apollo-http-service</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>apollo-entity</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okio</groupId>
+      <artifactId>okio</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>apollo-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

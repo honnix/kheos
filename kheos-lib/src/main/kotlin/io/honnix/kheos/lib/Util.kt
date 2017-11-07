@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.util.StdConverter
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import java.net.URL
 
-
 object JSON {
   internal class Str2GroupedCommandConverter : StdConverter<String, GroupedCommand>() {
     override fun convert(value: String): GroupedCommand {
@@ -53,4 +52,6 @@ object JSON {
       .registerModule(KotlinModule())
 
   fun serialize(value: Any): ByteArray = mapper.writeValueAsBytes(value)
+  
+  inline fun <reified T> deserialize(bytes: ByteArray) = mapper.readValue(bytes, T::class.java)
 }

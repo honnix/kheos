@@ -94,12 +94,12 @@ internal class HeosClientImpl(host: String,
     heartbeatExecutorService.scheduleWithFixedDelay({
       try {
         logger.info("sending heartbeat command")
-        val response: HeartbeatResponse = heartbeat()
+        val response = heartbeat()
         logger.debug("received heartbeat response {}", response)
       } catch (e: HeosCommandException) {
         logger.warn("heartbeat command got a fail status: eid({}) text({})", e.eid, e.text, e)
       } catch (e: Exception) {
-        logger.error("unknown failure happened", e)
+        logger.error("unexpected failure", e)
       }
     }, 0, 30, TimeUnit.SECONDS)
   }

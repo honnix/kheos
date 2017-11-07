@@ -18,7 +18,7 @@
 package io.honnix.kheos.lib
 
 fun main(args: Array<String>) {
-  val c = HeosClient.newInstance("192.168.17.219")
+  val c = HeosClient.newInstance("heos")
   c.startHeartbeat()
   println(c.getNowPlayingMedia("1723431415"))
   c.stopHeartbeat()

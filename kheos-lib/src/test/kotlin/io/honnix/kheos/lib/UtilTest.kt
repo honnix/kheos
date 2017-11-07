@@ -81,4 +81,11 @@ class JSONTest : StringSpec({
     JSON.Str2URLConverter().convert("http://example.com") shouldBe
         URL("http://example.com")
   }
+
+  "should serialize and deserialize" {
+    val origin = CheckAccountResponse(
+        Status(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+            Result.SUCCESS, Message()))
+    JSON.deserialize<CheckAccountResponse>(JSON.serialize(origin)) shouldBe origin
+  }
 })

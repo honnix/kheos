@@ -29,11 +29,12 @@ class HeosCommandExceptionTest : StringSpec({
               .add("eid", eid.toString())
               .add("text", text)
               .build()
-      ) == HeosCommandException(eid, text)
+      ) == HeosCommandException(ErrorId.from(eid), text)
     })
   }
 
   "should build correct exception with fallback eid and test from message" {
-    HeosCommandException.build(Message()) shouldBe HeosCommandException(-1, "no error message")
+    HeosCommandException.build(Message()) shouldBe
+        HeosCommandException(ErrorId.UNKNOWN, "no error message")
   }
 })
