@@ -7,4 +7,8 @@
 
 ## API Spec
 
-http://www2.aerne.com/Public/dok-sw.nsf/0c6187bc750a16fcc1256e3c005a9740/9193bea412104506c1257dbd00298c78/$FILE/HEOS_CLI_ProtocolSpecification-Verion-1.3.pdf
+[api](http://www2.aerne.com/Public/dok-sw.nsf/0c6187bc750a16fcc1256e3c005a9740/9193bea412104506c1257dbd00298c78/$FILE/HEOS_CLI_ProtocolSpecification-Verion-1.3.pdf)
+
+## Status
+
+WIP and not usable.
