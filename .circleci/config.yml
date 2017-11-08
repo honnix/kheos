@@ -6,6 +6,7 @@ jobs:
       - image: maven:3.5.0-jdk-8
     steps:
       - checkout
+      - setup_remote_docker
       - restore_cache:
           key: v1-deps-{{ checksum "pom.xml" }}
       - run: mvn dependency:go-offline compile
