@@ -99,7 +99,7 @@ internal class HeosClientImpl(host: String,
       } catch (e: HeosCommandException) {
         logger.warn("heartbeat command got a fail status: eid({}) text({})", e.eid, e.text, e)
       } catch (e: Exception) {
-        logger.error("unexpected failure", e)
+        logger.error("other failure", e)
       }
     }, 0, 30, TimeUnit.SECONDS)
   }

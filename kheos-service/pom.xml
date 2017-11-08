@@ -71,6 +71,25 @@
       </plugin>
 
       <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>create-timestamp</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>create-timestamp</goal>
+            </goals>
+            <configuration>
+              <timezone>UTC</timezone>
+              <timestampFormat>yyyyMMdd'T'HHmmss</timestampFormat>
+              <timestampPropertyName>buildTimestamp</timestampPropertyName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
@@ -82,7 +101,19 @@
               <classpathPrefix>lib/</classpathPrefix>
               <mainClass>${service.main}</mainClass>
             </manifest>
+            <manifestEntries>
+              <Implementation-Version>${project.version}-${buildTimestamp}-${buildNumber}</Implementation-Version>
+            </manifestEntries>
           </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <configuration>
+          <repository>honnix/${project.artifactId}</repository>
+          <tag>${project.version}-${buildTimestamp}-${buildNumber}</tag>
         </configuration>
       </plugin>
     </plugins>
