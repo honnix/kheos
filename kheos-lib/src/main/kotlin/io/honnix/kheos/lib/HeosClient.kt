@@ -124,10 +124,12 @@ internal class HeosClientImpl(host: String,
   }
 
   override fun stopHeartbeat() {
+    logger.info("stopping heartbeat")
     heartbeatExecutorService.shutdownNow()
   }
 
   override fun close() {
+    logger.info("closing connection to heos")
     clientSocket.close()
   }
 

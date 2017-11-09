@@ -26,12 +26,16 @@ import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
 import io.honnix.kheos.lib.CheckAccountResponse
 import io.honnix.kheos.lib.Command
 import io.honnix.kheos.lib.CommandGroup
+import io.honnix.kheos.lib.Control
 import io.honnix.kheos.lib.ErrorId
+import io.honnix.kheos.lib.GetPlayersResponse
 import io.honnix.kheos.lib.GroupedCommand
 import io.honnix.kheos.lib.HeosClient
 import io.honnix.kheos.lib.HeosCommandException
 import io.honnix.kheos.lib.JSON
+import io.honnix.kheos.lib.Lineout
 import io.honnix.kheos.lib.Message
+import io.honnix.kheos.lib.Player
 import io.honnix.kheos.lib.Result
 import io.honnix.kheos.lib.Status
 import io.kotlintest.matchers.shouldBe
@@ -118,6 +122,28 @@ class HeosSystemCommandResourceTest : StringSpec() {
         `when`(heosClient.checkAccount()).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath, "/account")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<CheckAccountResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should get players" {
+      forAll(allVersions()) { version ->
+        val payload = GetPlayersResponse(
+            Status(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYERS),
+                Result.SUCCESS, Message()),
+            listOf(
+                Player("name0", "0", "model0",
+                    "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE),
+                Player("name1", "1", "model1",
+                    "0.1", "192.168.1.101", "wifi", Lineout.FIXED,
+                    "100", Control.NETWORK)))
+
+        `when`(heosClient.getPlayers()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/players")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<CheckAccountResponse>(response.payload().get().toByteArray()) shouldBe

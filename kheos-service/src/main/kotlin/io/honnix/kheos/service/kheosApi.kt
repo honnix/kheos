@@ -29,6 +29,7 @@ import com.spotify.apollo.route.SyncHandler
 import io.honnix.kheos.lib.CheckAccountResponse
 
 import io.honnix.kheos.lib.ErrorId.*
+import io.honnix.kheos.lib.GetPlayersResponse
 import io.honnix.kheos.lib.HeosClient
 import io.honnix.kheos.lib.HeosCommandException
 import io.honnix.kheos.lib.JSON
@@ -82,13 +83,20 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(CheckAccountResponse::class.java),
             "GET", base + "/account",
-            SyncHandler { checkAccount() })
+            SyncHandler { checkAccount() }),
+        Route.with(
+            em.serializerResponse(GetPlayersResponse::class.java),
+            "GET", base + "/players",
+            SyncHandler { getPlayers() })
+
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
   }
 
   private fun checkAccount() = callAndBuildResponse { heosClient.checkAccount() }
+
+  private fun getPlayers() = callAndBuildResponse { heosClient.getPlayers() }
 }
 
 class HeosPlayerCommandResource(heosClient: HeosClient) {
