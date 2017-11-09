@@ -21,6 +21,7 @@ import io.honnix.kheos.lib.Command.*
 import io.honnix.kheos.lib.CommandGroup.*
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
+import java.io.Closeable
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
@@ -31,7 +32,7 @@ import java.util.concurrent.TimeUnit
 const val HEOS_PORT = 1255
 const val COMMAND_DELIMITER = "\r\n"
 
-interface HeosClient {
+interface HeosClient : Closeable {
   companion object {
     fun newInstance(host: String): HeosClient = HeosClientImpl(host)
   }
@@ -124,6 +125,9 @@ internal class HeosClientImpl(host: String,
 
   override fun stopHeartbeat() {
     heartbeatExecutorService.shutdownNow()
+  }
+
+  override fun close() {
     clientSocket.close()
   }
 

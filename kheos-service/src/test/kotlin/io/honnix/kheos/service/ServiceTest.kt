@@ -64,6 +64,7 @@ class KheosAppTest : StringSpec() {
       verify(heosClient).startHeartbeat(0, 5)
       verify(closer).register(any<Closeable>())
       verify(heosClient).stopHeartbeat()
+      verify(heosClient).close()
 
       verify(routingEngine).registerAutoRoute(any())
       verify(routingEngine, times(2)).registerRoutes(any())
@@ -98,8 +99,9 @@ class KheosAppTest : StringSpec() {
       KheosApp({ heosClient }).create(environment)
 
       verify(heosClient, never()).startHeartbeat()
-      verify(closer, never()).register(any<Closeable>())
+      verify(closer).register(any<Closeable>())
       verify(heosClient, never()).stopHeartbeat()
+      verify(heosClient).close()
 
       verify(routingEngine).registerAutoRoute(any())
       verify(routingEngine, times(2)).registerRoutes(any())

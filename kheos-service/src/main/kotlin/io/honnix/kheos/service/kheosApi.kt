@@ -78,10 +78,11 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     val base = "/system"
     val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
 
-    val routes = listOf(Route.with(
-        em.serializerResponse(CheckAccountResponse::class.java),
-        "GET", base + "/account",
-        SyncHandler { checkAccount() })
+    val routes = listOf(
+        Route.with(
+            em.serializerResponse(CheckAccountResponse::class.java),
+            "GET", base + "/account",
+            SyncHandler { checkAccount() })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
