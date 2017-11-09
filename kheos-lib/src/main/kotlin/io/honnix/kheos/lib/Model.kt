@@ -45,7 +45,9 @@ enum class Command(val command: String) {
   GET_VOLUME("get_volume"),
   SET_VOLUME("set_volume"),
   VOLUME_UP("volume_up"),
-  VOLUME_DOWN("volume_down");
+  VOLUME_DOWN("volume_down"),
+  GET_MUTE("get_mute"),
+  SET_MUTE("set_mute");
 
   companion object {
     @JsonCreator
@@ -112,7 +114,7 @@ enum class Control(@JsonValue val option: Int) {
   override fun toString() = option.toString()
 }
 
-enum class PlayState(val state: String) {
+enum class PlayState(private val state: String) {
   PLAY("play"),
   PAUSE("pause"),
   STOP("Stop");
@@ -120,6 +122,19 @@ enum class PlayState(val state: String) {
   companion object {
     @JsonCreator
     fun from(state: String) = PlayState.valueOf(state.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = state
+}
+
+enum class PlayerMuteState(private val state: String) {
+  ON("on"),
+  OFF("off");
+
+  companion object {
+    @JsonCreator
+    fun from(state: String) = PlayerMuteState.valueOf(state.toUpperCase())
   }
 
   @JsonValue
@@ -155,6 +170,11 @@ data class Message(private val content: Map<String, List<String>>) {
       return this
     }
 
+    fun add(name: String, value: Any): Builder {
+      add(name, value.toString())
+      return this
+    }
+
     fun add(name: String, value: List<String>): Builder {
       map.merge(name, value, { x, y -> x + y })
       return this
@@ -168,6 +188,9 @@ data class Message(private val content: Map<String, List<String>>) {
   fun value(name: String) = values(name)?.firstOrNull()
 
   fun intValue(name: String) = value(name)?.toInt()
+
+  fun <T : Enum<T>> enumValue(name: String, valueOf: (String) -> Enum<T>) =
+      value(name)?.let { valueOf(it.toUpperCase()) }
 
   fun isEmpty() = content.isEmpty()
 
@@ -235,3 +258,7 @@ data class SetVolumeResponse(@JsonProperty("heos") override val status: Status) 
 data class VolumeUpResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class VolumeDownResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

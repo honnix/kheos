@@ -87,7 +87,7 @@ class HeosClientImplTest : StringSpec() {
       val response = HeartbeatResponse(
           Status(GroupedCommand(SYSTEM, HEART_BEAT),
               Result.FAIL, Message.Builder()
-              .add("eid", ErrorId.INTERNAL_ERROR.eid.toString())
+              .add("eid", ErrorId.INTERNAL_ERROR.eid)
               .add("text", "System Internal Error")
               .build()))
 
@@ -130,7 +130,7 @@ class HeosClientImplTest : StringSpec() {
       val response = CheckAccountResponse(
           Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.FAIL, Message.Builder()
-              .add("eid", ErrorId.INTERNAL_ERROR.eid.toString())
+              .add("eid", ErrorId.INTERNAL_ERROR.eid)
               .add("text", "System Internal Error")
               .build()))
 
@@ -402,6 +402,39 @@ class HeosClientImplTest : StringSpec() {
       shouldThrow<IllegalArgumentException> {
         heosClient.volumeDown("0", 11)
       }
+    }
+
+    "should get mute" {
+      val expectedResponse = GetMuteResponse(
+          Status(GroupedCommand(PLAYER, GET_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getMute("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_mute?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should set mute" {
+      val expectedResponse = SetMuteResponse(
+          Status(GroupedCommand(PLAYER, SET_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("state", PlayerMuteState.OFF)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setMute("0", PlayerMuteState.OFF)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_mute?pid=0&state=off$COMMAND_DELIMITER"
     }
   }
 }

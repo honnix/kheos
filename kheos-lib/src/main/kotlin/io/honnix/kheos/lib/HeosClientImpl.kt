@@ -67,6 +67,10 @@ interface HeosClient {
   fun volumeUp(pid: String, step: Int = 5): VolumeUpResponse
 
   fun volumeDown(pid: String, step: Int = 5): VolumeDownResponse
+
+  fun getMute(pid: String): GetMuteResponse
+
+  fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -151,7 +155,7 @@ internal class HeosClientImpl(host: String,
       sendCommand(GroupedCommand(PLAYER, SET_PLAY_STATE),
           AttributesBuilder()
               .add("pid", pid)
-              .add("state", state.toString())
+              .add("state", state)
               .build())
 
   override fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse =
@@ -169,7 +173,7 @@ internal class HeosClientImpl(host: String,
     return sendCommand(GroupedCommand(PLAYER, SET_VOLUME),
         AttributesBuilder()
             .add("pid", pid)
-            .add("level", level.toString())
+            .add("level", level)
             .build())
   }
 
@@ -180,7 +184,7 @@ internal class HeosClientImpl(host: String,
     return sendCommand(GroupedCommand(PLAYER, VOLUME_UP),
         AttributesBuilder()
             .add("pid", pid)
-            .add("step", step.toString())
+            .add("step", step)
             .build())
   }
 
@@ -192,7 +196,18 @@ internal class HeosClientImpl(host: String,
     ),
         AttributesBuilder()
             .add("pid", pid)
-            .add("step", step.toString())
+            .add("step", step)
             .build())
   }
+
+  override fun getMute(pid: String): GetMuteResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_MUTE),
+          AttributesBuilder().add("pid", pid).build())
+
+  override fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse =
+      sendCommand(GroupedCommand(PLAYER, SET_MUTE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("state", state)
+              .build())
 }

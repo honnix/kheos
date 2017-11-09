@@ -26,7 +26,7 @@ class HeosCommandExceptionTest : StringSpec({
     forAll({ eid: Int, text: String ->
       HeosCommandException.build(
           Message.Builder()
-              .add("eid", eid.toString())
+              .add("eid", eid)
               .add("text", text)
               .build()
       ) == HeosCommandException(ErrorId.from(eid), text)

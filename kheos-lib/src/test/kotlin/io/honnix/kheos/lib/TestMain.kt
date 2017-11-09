@@ -18,8 +18,7 @@
 package io.honnix.kheos.lib
 
 fun main(args: Array<String>) {
-  val c = HeosClient.newInstance("heos")
-  c.startHeartbeat()
-  println(c.getNowPlayingMedia("1723431415"))
-  c.stopHeartbeat()
+  val a = Message.Builder().add("b", PlayerMuteState.ON).build()
+      .enumValue("a", { PlayerMuteState.valueOf(it) })
+  println(a)
 }
