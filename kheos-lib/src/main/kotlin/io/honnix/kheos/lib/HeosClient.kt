@@ -36,7 +36,7 @@ interface HeosClient {
     fun newInstance(host: String): HeosClient = HeosClientImpl(host)
   }
 
-  fun startHeartbeat()
+  fun startHeartbeat(initialDelay: Long = 0, interval: Long = 30, unit: TimeUnit = TimeUnit.SECONDS)
 
   fun stopHeartbeat()
 
@@ -108,7 +108,7 @@ internal class HeosClientImpl(host: String,
     return "heos://${command.group.group}/${command.command}$attributeStr"
   }
 
-  override fun startHeartbeat() {
+  override fun startHeartbeat(initialDelay: Long, interval: Long, unit: TimeUnit) {
     heartbeatExecutorService.scheduleWithFixedDelay({
       try {
         logger.info("sending heartbeat command")
@@ -119,7 +119,7 @@ internal class HeosClientImpl(host: String,
       } catch (e: Exception) {
         logger.error("other failure", e)
       }
-    }, 0, 30, TimeUnit.SECONDS)
+    }, initialDelay, interval, TimeUnit.SECONDS)
   }
 
   override fun stopHeartbeat() {

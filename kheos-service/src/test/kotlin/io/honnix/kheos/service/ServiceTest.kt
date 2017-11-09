@@ -27,8 +27,6 @@ import io.kotlintest.matchers.shouldBe
 import io.kotlintest.mock.`when`
 import io.kotlintest.mock.mock
 import io.kotlintest.specs.StringSpec
-
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.*
 import java.io.Closeable
 
@@ -38,6 +36,8 @@ class KheosAppTest : StringSpec() {
       val environment = mock<Environment>()
       val config = mock<Config>()
       `when`(config.getString("kheos.heos.host")).thenReturn("heos")
+      `when`(config.getBoolean("kheos.enable.heartbeat")).thenReturn(true)
+      `when`(config.getLong("kheos.heartbeat.interval.in.second")).thenReturn(5)
       `when`(environment.config()).thenReturn(config)
 
       val routingEngine = mock<Environment.RoutingEngine>()
@@ -61,13 +61,48 @@ class KheosAppTest : StringSpec() {
       val heosClient = mock<HeosClient>()
       KheosApp({ heosClient }).create(environment)
 
-      verify(heosClient).startHeartbeat()
+      verify(heosClient).startHeartbeat(0, 5)
+      verify(closer).register(any<Closeable>())
+      verify(heosClient).stopHeartbeat()
 
       verify(routingEngine).registerAutoRoute(any())
       verify(routingEngine, times(2)).registerRoutes(any())
+    }
 
-      verify(closer).register(any<Closeable>())
-      verify(heosClient).stopHeartbeat()
+    "should create no heartbeat" {
+      val environment = mock<Environment>()
+      val config = mock<Config>()
+      `when`(config.getString("kheos.heos.host")).thenReturn("heos")
+      `when`(config.getBoolean("kheos.enable.heartbeat")).thenReturn(false)
+      `when`(environment.config()).thenReturn(config)
+
+      val routingEngine = mock<Environment.RoutingEngine>()
+      `when`(environment.routingEngine()).thenReturn(routingEngine)
+      `when`(routingEngine.registerAutoRoute(any())).thenAnswer({ invocation ->
+        val route: Route<AsyncHandler<String>> = invocation.getArgument(0)
+        route.handler().invoke(null).toCompletableFuture().get() shouldBe "pong"
+        routingEngine
+      })
+      `when`(routingEngine.registerRoutes(any())).thenReturn(routingEngine)
+
+      val closer = mock<Closer>()
+      `when`(environment.closer()).thenReturn(closer)
+
+      `when`(closer.register(any<Closeable>())).thenAnswer({ invocation ->
+        val closeable: Closeable = invocation.getArgument(0)
+        closeable.close()
+        closeable
+      })
+
+      val heosClient = mock<HeosClient>()
+      KheosApp({ heosClient }).create(environment)
+
+      verify(heosClient, never()).startHeartbeat()
+      verify(closer, never()).register(any<Closeable>())
+      verify(heosClient, never()).stopHeartbeat()
+
+      verify(routingEngine).registerAutoRoute(any())
+      verify(routingEngine, times(2)).registerRoutes(any())
     }
   }
 }

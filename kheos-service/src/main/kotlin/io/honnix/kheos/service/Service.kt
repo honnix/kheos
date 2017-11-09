@@ -26,10 +26,17 @@ import java.io.Closeable
 
 class KheosApp(private val heosClientFactory: (String) -> HeosClient) : AppInit {
   override fun create(environment: Environment) {
-    val heosHost = environment.config().getString("kheos.heos.host")
+    val config = environment.config()
+
+    val heosHost = config.getString("kheos.heos.host")
     val heosClient = heosClientFactory(heosHost)
 
-    heosClient.startHeartbeat()
+    if (config.getBoolean("kheos.enable.heartbeat")) {
+      val interval = environment.config().getLong("kheos.heartbeat.interval.in.second")
+      heosClient.startHeartbeat(0, interval)
+      environment.closer().register(Closeable { heosClient.stopHeartbeat() })
+    }
+
     val heosSystemCommandResource = HeosSystemCommandResource(heosClient)
     val heosPlayerCommandResource = HeosPlayerCommandResource(heosClient)
 
@@ -37,8 +44,6 @@ class KheosApp(private val heosClientFactory: (String) -> HeosClient) : AppInit 
         .registerAutoRoute(Route.sync("GET", "/ping") { "pong" })
         .registerRoutes(heosSystemCommandResource.routes().stream())
         .registerRoutes(heosPlayerCommandResource.routes().stream())
-
-    environment.closer().register(Closeable { heosClient.stopHeartbeat() })
   }
 }
 
