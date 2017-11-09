@@ -41,7 +41,11 @@ enum class Command(val command: String) {
   GET_PLAYER_INFO("get_player_info"),
   GET_PLAY_STATE("get_play_state"),
   SET_PLAY_STATE("set_play_state"),
-  GET_NOW_PLAYING_MEDIA("get_now_playing_media");
+  GET_NOW_PLAYING_MEDIA("get_now_playing_media"),
+  GET_VOLUME("get_volume"),
+  SET_VOLUME("set_volume"),
+  VOLUME_UP("volume_up"),
+  VOLUME_DOWN("volume_down");
 
   companion object {
     @JsonCreator
@@ -163,6 +167,8 @@ data class Message(private val content: Map<String, List<String>>) {
 
   fun value(name: String) = values(name)?.firstOrNull()
 
+  fun intValue(name: String) = value(name)?.toInt()
+
   fun isEmpty() = content.isEmpty()
 
   fun isNotEmpty() = content.isNotEmpty()
@@ -221,3 +227,11 @@ data class SetPlayStateResponse(@JsonProperty("heos") override val status: Statu
 
 data class GetNowPlayingMediaResponse(@JsonProperty("heos") override val status: Status,
                                       val payload: Media, val options: Options = listOf()) : GenericResponse
+
+data class GetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class VolumeUpResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class VolumeDownResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

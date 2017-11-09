@@ -283,5 +283,125 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/get_now_playing_media?pid=0$COMMAND_DELIMITER"
     }
+
+    "should get volume" {
+      val expectedResponse = GetVolumeResponse(
+          Status(GroupedCommand(PLAYER, GET_VOLUME),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("level", "10")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getVolume("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_volume?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should set volume" {
+      val expectedResponse = SetVolumeResponse(
+          Status(GroupedCommand(PLAYER, SET_VOLUME),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("level", "10")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setVolume("0", 10)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_volume?pid=0&level=10$COMMAND_DELIMITER"
+    }
+
+    "should throw if volume level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.setVolume("0", -1)
+      }
+    }
+
+    "should volume up" {
+      val expectedResponse = VolumeUpResponse(
+          Status(GroupedCommand(PLAYER, VOLUME_UP),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("step", "3")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeUp("0", 3)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/volume_up?pid=0&step=3$COMMAND_DELIMITER"
+    }
+
+    "should volume up with default step" {
+      val expectedResponse = VolumeUpResponse(
+          Status(GroupedCommand(PLAYER, VOLUME_UP),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("step", "5")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeUp("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/volume_up?pid=0&step=5$COMMAND_DELIMITER"
+    }
+
+    "should throw if volume up step level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.volumeUp("0", -1)
+      }
+    }
+
+    "should volume down" {
+      val expectedResponse = VolumeDownResponse(
+          Status(GroupedCommand(PLAYER, VOLUME_DOWN),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("step", "3")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeDown("0", 3)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/volume_down?pid=0&step=3$COMMAND_DELIMITER"
+    }
+
+    "should volume down with default step" {
+      val expectedResponse = VolumeDownResponse(
+          Status(GroupedCommand(PLAYER, VOLUME_DOWN),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("step", "5")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeDown("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/volume_down?pid=0&step=5$COMMAND_DELIMITER"
+    }
+
+    "should throw if volume down step level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.volumeDown("0", 11)
+      }
+    }
   }
 }

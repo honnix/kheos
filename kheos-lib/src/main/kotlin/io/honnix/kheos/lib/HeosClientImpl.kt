@@ -59,6 +59,14 @@ interface HeosClient {
   fun setPlayState(pid: String, state: PlayState): SetPlayStateResponse
 
   fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse
+
+  fun getVolume(pid: String): GetVolumeResponse
+
+  fun setVolume(pid: String, level: Int): SetVolumeResponse
+
+  fun volumeUp(pid: String, step: Int = 5): VolumeUpResponse
+
+  fun volumeDown(pid: String, step: Int = 5): VolumeDownResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -149,4 +157,42 @@ internal class HeosClientImpl(host: String,
   override fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse =
       sendCommand(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
           AttributesBuilder().add("pid", pid).build())
+
+  override fun getVolume(pid: String): GetVolumeResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_VOLUME),
+          AttributesBuilder().add("pid", pid).build())
+
+  override fun setVolume(pid: String, level: Int): SetVolumeResponse {
+    if (level !in 0..100)
+      throw IllegalArgumentException("volume level should be in range [0, 100], $level given")
+
+    return sendCommand(GroupedCommand(PLAYER, SET_VOLUME),
+        AttributesBuilder()
+            .add("pid", pid)
+            .add("level", level.toString())
+            .build())
+  }
+
+  override fun volumeUp(pid: String, step: Int): VolumeUpResponse {
+    if (step !in 1..10)
+      throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
+
+    return sendCommand(GroupedCommand(PLAYER, VOLUME_UP),
+        AttributesBuilder()
+            .add("pid", pid)
+            .add("step", step.toString())
+            .build())
+  }
+
+  override fun volumeDown(pid: String, step: Int): VolumeDownResponse {
+    if (step !in 1..10)
+      throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
+
+    return sendCommand(GroupedCommand(PLAYER, VOLUME_DOWN
+    ),
+        AttributesBuilder()
+            .add("pid", pid)
+            .add("step", step.toString())
+            .build())
+  }
 }
