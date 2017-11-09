@@ -48,7 +48,9 @@ enum class Command(val command: String) {
   VOLUME_DOWN("volume_down"),
   GET_MUTE("get_mute"),
   SET_MUTE("set_mute"),
-  TOGGLE_MUTE("toggle_mute");
+  TOGGLE_MUTE("toggle_mute"),
+  GET_PLAY_MODE("get_play_mode"),
+  SET_PLAY_MODE("set_play_mode");
 
   companion object {
     @JsonCreator
@@ -136,6 +138,32 @@ enum class PlayerMuteState(private val state: String) {
   companion object {
     @JsonCreator
     fun from(state: String) = PlayerMuteState.valueOf(state.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = state
+}
+
+enum class PlayRepeatState(private val state: String) {
+  ON("on"),
+  OFF("off");
+
+  companion object {
+    @JsonCreator
+    fun from(state: String) = PlayRepeatState.valueOf(state.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = state
+}
+
+enum class PlayShuffleState(private val state: String) {
+  ON("on"),
+  OFF("off");
+
+  companion object {
+    @JsonCreator
+    fun from(state: String) = PlayShuffleState.valueOf(state.toUpperCase())
   }
 
   @JsonValue
@@ -267,3 +295,7 @@ data class GetMuteResponse(@JsonProperty("heos") override val status: Status) : 
 data class SetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class ToggleMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

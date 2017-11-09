@@ -73,6 +73,10 @@ interface HeosClient {
   fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse
 
   fun toggleMute(pid: String): ToggleMuteResponse
+
+  fun getPlayMode(pid: String): GetPlayModeResponse
+
+  fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState): SetPlayModeResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -216,4 +220,17 @@ internal class HeosClientImpl(host: String,
   override fun toggleMute(pid: String): ToggleMuteResponse =
       sendCommand(GroupedCommand(PLAYER, TOGGLE_MUTE),
           AttributesBuilder().add("pid", pid).build())
+
+  override fun getPlayMode(pid: String): GetPlayModeResponse =
+      sendCommand(GroupedCommand(PLAYER, GET_PLAY_MODE),
+          AttributesBuilder().add("pid", pid).build())
+
+  override fun setPlayMode(pid: String, repeat: PlayRepeatState,
+                           shuffle: PlayShuffleState): SetPlayModeResponse =
+      sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("repeat", repeat)
+              .add("shuffle", shuffle)
+              .build())
 }

@@ -452,5 +452,39 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/toggle_mute?pid=0$COMMAND_DELIMITER"
     }
+
+    "should get play mode" {
+      val expectedResponse = GetPlayModeResponse(
+          Status(GroupedCommand(PLAYER, GET_PLAY_MODE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getPlayMode("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_play_mode?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should set mute" {
+      val expectedResponse = SetPlayModeResponse(
+          Status(GroupedCommand(PLAYER, SET_PLAY_MODE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("repeat", PlayRepeatState.ON)
+              .add("shuffle", PlayShuffleState.OFF)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setPlayMode("0", PlayRepeatState.ON, PlayShuffleState.OFF)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_play_mode?pid=0&repeat=on&shuffle=off$COMMAND_DELIMITER"
+    }
   }
 }
