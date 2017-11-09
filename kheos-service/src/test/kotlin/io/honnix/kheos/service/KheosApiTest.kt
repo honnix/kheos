@@ -146,7 +146,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
             serviceHelper.request("GET", path(version, basePath, "/players")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
-        JSON.deserialize<CheckAccountResponse>(response.payload().get().toByteArray()) shouldBe
+        JSON.deserialize<GetPlayersResponse>(response.payload().get().toByteArray()) shouldBe
             payload
       }
     }
