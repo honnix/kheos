@@ -192,9 +192,11 @@ data class Message(private val content: Map<String, List<String>>) {
   fun <T : Enum<T>> enumValue(name: String, valueOf: (String) -> Enum<T>) =
       value(name)?.let { valueOf(it.toUpperCase()) }
 
-  fun isEmpty() = content.isEmpty()
+  fun <T> typedValue(name: String, converter: (String) -> T) = value(name)?.let(converter)
 
   fun isNotEmpty() = content.isNotEmpty()
+
+  fun isEmpty() = !isNotEmpty()
 
   @JsonValue
   override fun toString() = content.entries.joinToString("&") { entry ->
