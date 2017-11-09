@@ -436,5 +436,21 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/set_mute?pid=0&state=off$COMMAND_DELIMITER"
     }
+
+    "should toggle mute" {
+      val expectedResponse = ToggleMuteResponse(
+          Status(GroupedCommand(PLAYER, TOGGLE_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.toggleMute("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/toggle_mute?pid=0$COMMAND_DELIMITER"
+    }
   }
 }

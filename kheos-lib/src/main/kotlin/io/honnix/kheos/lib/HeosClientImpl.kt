@@ -71,6 +71,8 @@ interface HeosClient {
   fun getMute(pid: String): GetMuteResponse
 
   fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse
+
+  fun toggleMute(pid: String): ToggleMuteResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -210,4 +212,8 @@ internal class HeosClientImpl(host: String,
               .add("pid", pid)
               .add("state", state)
               .build())
+
+  override fun toggleMute(pid: String): ToggleMuteResponse =
+      sendCommand(GroupedCommand(PLAYER, TOGGLE_MUTE),
+          AttributesBuilder().add("pid", pid).build())
 }

@@ -47,7 +47,8 @@ enum class Command(val command: String) {
   VOLUME_UP("volume_up"),
   VOLUME_DOWN("volume_down"),
   GET_MUTE("get_mute"),
-  SET_MUTE("set_mute");
+  SET_MUTE("set_mute"),
+  TOGGLE_MUTE("toggle_mute");
 
   companion object {
     @JsonCreator
@@ -264,3 +265,5 @@ data class VolumeDownResponse(@JsonProperty("heos") override val status: Status)
 data class GetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class SetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class ToggleMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
