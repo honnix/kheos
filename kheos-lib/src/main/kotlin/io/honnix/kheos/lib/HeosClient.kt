@@ -22,6 +22,7 @@ import io.honnix.kheos.lib.CommandGroup.*
 import org.slf4j.LoggerFactory
 import java.io.BufferedReader
 import java.io.Closeable
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
@@ -36,6 +37,8 @@ interface HeosClient : Closeable {
   companion object {
     fun newInstance(host: String): HeosClient = HeosClientImpl(host)
   }
+
+  fun reconnect()
 
   fun startHeartbeat(initialDelay: Long = 0, interval: Long = 30, unit: TimeUnit = TimeUnit.SECONDS)
 
@@ -81,20 +84,44 @@ interface HeosClient : Closeable {
 }
 
 internal class HeosClientImpl(host: String,
-                              socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
+                              private val socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
                               private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
   private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
 
-  private val clientSocket by lazy(socketFactory)
-  private val output by lazy { PrintWriter(clientSocket.getOutputStream(), true) }
-  private val input by lazy { BufferedReader(InputStreamReader(clientSocket.getInputStream())) }
+  private lateinit var clientSocket: Socket
 
   @Synchronized
+  override fun reconnect() {
+    if (!clientSocket().isClosed) {
+      clientSocket().close()
+    }
+    clientSocket = socketFactory()
+  }
+
+  @Synchronized
+  private fun clientSocket() = try {
+    clientSocket
+  } catch (e: UninitializedPropertyAccessException) {
+    clientSocket = socketFactory()
+    clientSocket
+  }
+
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
                                                                attributes: Attributes = Attributes(mapOf())): T {
-    output.printf("${mkCommand(command, attributes)}$COMMAND_DELIMITER")
+    val rawResponse = synchronized(this) {
+      try {
+        val output = PrintWriter(clientSocket().getOutputStream(), true)
+        val input = BufferedReader(InputStreamReader(clientSocket().getInputStream()))
 
-    val rawResponse = input.readLine()
+        output.printf("${mkCommand(command, attributes)}$COMMAND_DELIMITER")
+        input.readLine()
+      } catch (e: IOException) {
+        val message = "failed to communicate with ${clientSocket().inetAddress}"
+        logger.error(message)
+        throw HeosClientException(message, e)
+      }
+    }
+
     logger.debug(rawResponse)
 
     val response = JSON.mapper.readValue(rawResponse, T::class.java)
@@ -102,6 +129,7 @@ internal class HeosClientImpl(host: String,
     if (response.status.result === Result.FAIL) {
       throw HeosCommandException.build(response.status.message)
     }
+
     return response
   }
 
@@ -131,7 +159,7 @@ internal class HeosClientImpl(host: String,
 
   override fun close() {
     logger.info("closing connection to heos")
-    clientSocket.close()
+    clientSocket().close()
   }
 
   override fun heartbeat(): HeartbeatResponse =

@@ -26,6 +26,8 @@ data class HeosCommandException(val eid: ErrorId, val text: String) :
   }
 }
 
+class HeosClientException(message: String, cause: Throwable) : Exception(message, cause)
+
 enum class ErrorId(val eid: Int) {
   UNKNOWN(0),
   UNRECOGNIZED_COMMAND(1),

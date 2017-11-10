@@ -32,6 +32,7 @@ import org.mockito.Mockito.*
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.Socket
+import java.net.SocketException
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
@@ -64,6 +65,25 @@ class HeosClientImplTest : StringSpec() {
   init {
     "should create an instance of HeosClientImpl" {
       HeosClient.newInstance("localhost")::class shouldBe HeosClientImpl::class
+    }
+
+    "should reconnect" {
+      `when`(socket.isClosed).thenReturn(false)
+      heosClient.reconnect()
+      verify(socket).isClosed
+      verify(socket).close()
+
+      reset(socket)
+
+      `when`(socket.isClosed).thenReturn(true)
+      heosClient.reconnect()
+      verify(socket).isClosed
+      verify(socket, never()).close()
+    }
+    
+    "should close" {
+      heosClient.close()
+      verify(socket).close()
     }
 
     "should schedule heartbeat" {
@@ -144,6 +164,14 @@ class HeosClientImplTest : StringSpec() {
 
       input.available() shouldBe 0
       output.toString() shouldBe "heos://system/check_account$COMMAND_DELIMITER"
+    }
+
+    "should fail to check account due to broken socket" {
+      `when`(socket.getOutputStream()).thenThrow(SocketException())
+
+      val exception = shouldThrow<HeosClientException> {
+        heosClient.checkAccount()
+      }
     }
 
     "should sign in" {
