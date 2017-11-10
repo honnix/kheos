@@ -31,9 +31,11 @@ import io.honnix.kheos.lib.CheckAccountResponse
 import io.honnix.kheos.lib.ErrorId.*
 import io.honnix.kheos.lib.GetPlayersResponse
 import io.honnix.kheos.lib.HeosClient
+import io.honnix.kheos.lib.HeosClientException
 import io.honnix.kheos.lib.HeosCommandException
 import io.honnix.kheos.lib.JSON
 import okio.ByteString
+import org.slf4j.LoggerFactory
 
 typealias KRoute = Route<out AsyncHandler<out Response<ByteString>>>
 
@@ -66,11 +68,20 @@ object Api {
   }
 }
 
-internal fun <T> callAndBuildResponse(f: () -> T): Response<T> {
-  return try {
-    Response.forPayload(f())
-  } catch (e: HeosCommandException) {
-    Response.forStatus(eid2Status.getOrDefault(e.eid, INTERNAL_SERVER_ERROR).withReasonPhrase(e.message))
+internal val logger = LoggerFactory.getLogger(object {}::class.java.`package`.name)
+
+internal fun <T> callAndBuildResponse(h: () -> Unit = {}, retries: Int = 3, f: () -> T): Response<T> = try {
+  Response.forPayload(f())
+} catch (e: HeosCommandException) {
+  Response.forStatus(eid2Status.getOrDefault(e.eid, INTERNAL_SERVER_ERROR).withReasonPhrase(e.message))
+} catch (e: HeosClientException) {
+  if (retries == 0) {
+    logger.error("failed to send command after retries and this is unlikely to recover")
+    Response.forStatus(INTERNAL_SERVER_ERROR.withReasonPhrase(e.message))
+  } else {
+    logger.warn("failed to send command, will retry $retries time${if (retries > 1) "s" else ""}", e)
+    h()
+    callAndBuildResponse(h, retries - 1, f)
   }
 }
 
@@ -94,9 +105,13 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     return Api.prefixRoutes(routes, Api.Version.V0)
   }
 
-  private fun checkAccount() = callAndBuildResponse { heosClient.checkAccount() }
+  private fun checkAccount() = callAndBuildResponse(heosClient::reconnect) {
+    heosClient.checkAccount()
+  }
 
-  private fun getPlayers() = callAndBuildResponse { heosClient.getPlayers() }
+  private fun getPlayers() = callAndBuildResponse(heosClient::reconnect) {
+    heosClient.getPlayers()
+  }
 }
 
 class HeosPlayerCommandResource(heosClient: HeosClient) {

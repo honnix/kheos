@@ -26,7 +26,9 @@ data class HeosCommandException(val eid: ErrorId, val text: String) :
   }
 }
 
-class HeosClientException(message: String, cause: Throwable) : Exception(message, cause)
+class HeosClientException(message: String, cause: Throwable?) : Exception(message, cause) {
+  constructor(message: String) : this(message, null)
+}
 
 enum class ErrorId(val eid: Int) {
   UNKNOWN(0),

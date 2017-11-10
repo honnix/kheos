@@ -86,7 +86,9 @@ interface HeosClient : Closeable {
 internal class HeosClientImpl(host: String,
                               private val socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
                               private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
-  private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
+  companion object {
+    private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
+  }
 
   private lateinit var clientSocket: Socket
 
@@ -208,8 +210,9 @@ internal class HeosClientImpl(host: String,
           AttributesBuilder().add("pid", pid).build())
 
   override fun setVolume(pid: String, level: Int): SetVolumeResponse {
-    if (level !in 0..100)
+    if (level !in 0..100) {
       throw IllegalArgumentException("volume level should be in range [0, 100], $level given")
+    }
 
     return sendCommand(GroupedCommand(PLAYER, SET_VOLUME),
         AttributesBuilder()
@@ -219,8 +222,9 @@ internal class HeosClientImpl(host: String,
   }
 
   override fun volumeUp(pid: String, step: Int): VolumeUpResponse {
-    if (step !in 1..10)
+    if (step !in 1..10) {
       throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
+    }
 
     return sendCommand(GroupedCommand(PLAYER, VOLUME_UP),
         AttributesBuilder()
@@ -230,8 +234,9 @@ internal class HeosClientImpl(host: String,
   }
 
   override fun volumeDown(pid: String, step: Int): VolumeDownResponse {
-    if (step !in 1..10)
+    if (step !in 1..10) {
       throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
+    }
 
     return sendCommand(GroupedCommand(PLAYER, VOLUME_DOWN
     ),

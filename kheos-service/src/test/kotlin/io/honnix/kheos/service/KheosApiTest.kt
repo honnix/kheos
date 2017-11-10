@@ -31,6 +31,7 @@ import io.honnix.kheos.lib.ErrorId
 import io.honnix.kheos.lib.GetPlayersResponse
 import io.honnix.kheos.lib.GroupedCommand
 import io.honnix.kheos.lib.HeosClient
+import io.honnix.kheos.lib.HeosClientException
 import io.honnix.kheos.lib.HeosCommandException
 import io.honnix.kheos.lib.JSON
 import io.honnix.kheos.lib.Lineout
@@ -78,9 +79,16 @@ class KheosApiKtTest : StringSpec() {
       response.payload().get() shouldBe payload
     }
 
-    "should cal and build error response" {
+    "should call and build error response" {
       val response = callAndBuildResponse {
         throw HeosCommandException(ErrorId.INTERNAL_ERROR, "Internal error")
+      }
+      assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SERVER_ERROR)))
+    }
+
+    "should call and reconnect in case of HeosClientException" {
+      val response = callAndBuildResponse {
+        throw HeosClientException("forced failure")
       }
       assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SERVER_ERROR)))
     }
