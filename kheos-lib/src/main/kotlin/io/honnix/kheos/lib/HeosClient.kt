@@ -89,6 +89,7 @@ internal class HeosClientImpl(host: String,
   private val output by lazy { PrintWriter(clientSocket.getOutputStream(), true) }
   private val input by lazy { BufferedReader(InputStreamReader(clientSocket.getInputStream())) }
 
+  @Synchronized
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
                                                                attributes: Attributes = Attributes(mapOf())): T {
     output.printf("${mkCommand(command, attributes)}$COMMAND_DELIMITER")

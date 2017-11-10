@@ -31,17 +31,16 @@ class KheosApp(private val heosClientFactory: (String) -> HeosClient) : AppInit 
     val heosHost = config.getString("kheos.heos.host")
     val heosClient = heosClientFactory(heosHost)
 
+    environment.closer().register(heosClient)
+
     if (config.getBoolean("kheos.enable.heartbeat")) {
       val interval = environment.config().getLong("kheos.heartbeat.interval.in.second")
       heosClient.startHeartbeat(0, interval)
       environment.closer().register(Closeable {
         heosClient.stopHeartbeat()
-        heosClient.close()
       })
-    } else {
-      environment.closer().register(Closeable { heosClient.close() })
     }
-
+    
     val heosSystemCommandResource = HeosSystemCommandResource(heosClient)
     val heosPlayerCommandResource = HeosPlayerCommandResource(heosClient)
 

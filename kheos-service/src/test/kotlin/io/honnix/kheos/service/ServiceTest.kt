@@ -62,7 +62,7 @@ class KheosAppTest : StringSpec() {
       KheosApp({ heosClient }).create(environment)
 
       verify(heosClient).startHeartbeat(0, 5)
-      verify(closer).register(any<Closeable>())
+      verify(closer, times(2)).register(any<Closeable>())
       verify(heosClient).stopHeartbeat()
       verify(heosClient).close()
 
