@@ -119,6 +119,6 @@ class HeosPlayerCommandResource(heosClient: HeosClient) {
     val base = "/player"
     val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
 
-    return listOf()
+    return emptyList()
   }
 }

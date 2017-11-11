@@ -85,6 +85,8 @@ interface HeosClient : Closeable {
   fun getQueue(pid: String, range: IntRange = IntRange.EMPTY): GetQueueResponse
 
   fun playQueue(pid: String, qid: String): PlayQueueResponse
+
+  fun removeFromQueue(pid: String, qids: List<String>): RemoveFromQueueResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -296,4 +298,16 @@ internal class HeosClientImpl(host: String,
               .add("pid", pid)
               .add("qid", qid)
               .build())
+
+  override fun removeFromQueue(pid: String, qids: List<String>): RemoveFromQueueResponse {
+    if (qids.isEmpty()) {
+      throw IllegalArgumentException("at least one qid should be specified")
+    }
+
+    return sendCommand(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
+        AttributesBuilder()
+            .add("pid", pid)
+            .add("qid", qids.joinToString(","))
+            .build())
+  }
 }

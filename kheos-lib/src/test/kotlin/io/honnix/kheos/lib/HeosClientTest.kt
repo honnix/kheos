@@ -573,5 +573,28 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/play_queue?pid=0&qid=0$COMMAND_DELIMITER"
     }
+
+    "should remove from queue" {
+      val expectedResponse = RemoveFromQueueResponse(
+          Status(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("qid", "0,1,2,3")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.removeFromQueue("0", listOf("0", "1", "2", "3"))
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/remove_from_queue?pid=0&qid=0,1,2,3$COMMAND_DELIMITER"
+    }
+
+    "should throw if no qid" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.removeFromQueue("0", emptyList())
+      }
+    }
   }
 }

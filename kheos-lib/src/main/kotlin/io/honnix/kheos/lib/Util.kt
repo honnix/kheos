@@ -37,9 +37,9 @@ object JSON {
         else
           Message(value.split("&").map { x ->
             val parts = x.split("=")
-            parts[0] to if (parts.size > 1) listOf(parts[1]) else listOf()
+            parts[0] to if (parts.size > 1) listOf(parts[1]) else emptyList()
           }.fold(mapOf(), { acc, x ->
-            acc + (x.first to acc.getOrElse(x.first, { listOf() }) + x.second)
+            acc + (x.first to acc.getOrElse(x.first, { emptyList() }) + x.second)
           }))
   }
 

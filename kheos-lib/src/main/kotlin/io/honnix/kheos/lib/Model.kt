@@ -52,7 +52,8 @@ enum class Command(val command: String) {
   GET_PLAY_MODE("get_play_mode"),
   SET_PLAY_MODE("set_play_mode"),
   GET_QUEUE("get_queue"),
-  PLAY_QUEUE("play_queue");
+  PLAY_QUEUE("play_queue"),
+  REMOVE_FROM_QUEUE("remove_from_queue");
 
   companion object {
     @JsonCreator
@@ -192,7 +193,7 @@ data class Message(private val content: Map<String, List<String>>) {
     private var map = mutableMapOf<String, List<String>>()
 
     fun add(name: String): Builder {
-      add(name, listOf())
+      add(name, emptyList())
       return this
     }
 
@@ -295,7 +296,7 @@ data class GetPlayStateResponse(@JsonProperty("heos") override val status: Statu
 data class SetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class GetNowPlayingMediaResponse(@JsonProperty("heos") override val status: Status,
-                                      val payload: Media, val options: Options = listOf()) : GenericResponse
+                                      val payload: Media, val options: Options = emptyList()) : GenericResponse
 
 data class GetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
@@ -319,3 +320,5 @@ data class GetQueueResponse(@JsonProperty("heos") override val status: Status,
                             val payload: List<QueueItem>) : GenericResponse
 
 data class PlayQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RemoveFromQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
