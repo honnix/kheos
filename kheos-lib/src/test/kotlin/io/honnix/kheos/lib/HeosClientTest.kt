@@ -629,5 +629,37 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/clear_queue?pid=0$COMMAND_DELIMITER"
     }
+
+    "should play next" {
+      val expectedResponse = PlayNextResponse(
+          Status(GroupedCommand(PLAYER, PLAY_NEXT),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.playNext("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/play_next?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should clear queue" {
+      val expectedResponse = PlayPreviousResponse(
+          Status(GroupedCommand(PLAYER, PLAY_PREVIOUS),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.playPrevious("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/play_previous?pid=0$COMMAND_DELIMITER"
+    }
   }
 }

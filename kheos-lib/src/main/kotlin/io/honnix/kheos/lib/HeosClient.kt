@@ -91,6 +91,10 @@ interface HeosClient : Closeable {
   fun saveQueue(pid: String, name: String): SaveQueueResponse
 
   fun clearQueue(pid: String): ClearQueueResponse
+
+  fun playNext(pid: String): PlayNextResponse
+
+  fun playPrevious(pid: String): PlayPreviousResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -326,6 +330,18 @@ internal class HeosClientImpl(host: String,
 
   override fun clearQueue(pid: String): ClearQueueResponse =
       sendCommand(GroupedCommand(PLAYER, CLEAR_QUEUE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .build())
+
+  override fun playNext(pid: String): PlayNextResponse =
+      sendCommand(GroupedCommand(PLAYER, PLAY_NEXT),
+          AttributesBuilder()
+              .add("pid", pid)
+              .build())
+
+  override fun playPrevious(pid: String): PlayPreviousResponse =
+      sendCommand(GroupedCommand(PLAYER, PLAY_PREVIOUS),
           AttributesBuilder()
               .add("pid", pid)
               .build())
