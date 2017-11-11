@@ -80,7 +80,7 @@ class HeosClientImplTest : StringSpec() {
       verify(socket).isClosed
       verify(socket, never()).close()
     }
-    
+
     "should close" {
       heosClient.close()
       verify(socket).close()
@@ -513,6 +513,48 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/set_play_mode?pid=0&repeat=on&shuffle=off$COMMAND_DELIMITER"
+    }
+
+    "should get queue" {
+      val expectedResponse = GetQueueResponse(
+          Status(GroupedCommand(PLAYER, GET_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()),
+          listOf(QueueItem("song", "album", "artist",
+              URL("http://example.com"), "0", "0", "0")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getQueue("0", IntRange(0, 10))
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_queue?pid=0&range=0,10$COMMAND_DELIMITER"
+    }
+
+    "should throw if range start < 0" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.getQueue("0", IntRange(-1, 10))
+      }
+    }
+
+    "should get queue if range is empty" {
+      val expectedResponse = GetQueueResponse(
+          Status(GroupedCommand(PLAYER, GET_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()),
+          listOf(QueueItem("song", "album", "artist",
+              URL("http://example.com"), "0", "0", "0")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getQueue("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/get_queue?pid=0$COMMAND_DELIMITER"
     }
   }
 }

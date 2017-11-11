@@ -81,6 +81,8 @@ interface HeosClient : Closeable {
   fun getPlayMode(pid: String): GetPlayModeResponse
 
   fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState): SetPlayModeResponse
+
+  fun getQueue(pid: String, range: IntRange = IntRange.EMPTY): GetQueueResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -273,4 +275,16 @@ internal class HeosClientImpl(host: String,
               .add("repeat", repeat)
               .add("shuffle", shuffle)
               .build())
+
+  override fun getQueue(pid: String, range: IntRange): GetQueueResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    return sendCommand(GroupedCommand(PLAYER, GET_QUEUE),
+        AttributesBuilder()
+            .add("pid", pid)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
 }

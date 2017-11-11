@@ -50,7 +50,8 @@ enum class Command(val command: String) {
   SET_MUTE("set_mute"),
   TOGGLE_MUTE("toggle_mute"),
   GET_PLAY_MODE("get_play_mode"),
-  SET_PLAY_MODE("set_play_mode");
+  SET_PLAY_MODE("set_play_mode"),
+  GET_QUEUE("get_queue");
 
   companion object {
     @JsonCreator
@@ -204,6 +205,13 @@ data class Message(private val content: Map<String, List<String>>) {
       return this
     }
 
+    fun add(name: String, condition: () -> Boolean, value: () -> Any): Builder {
+      if (condition()) {
+        add(name, value())
+      }
+      return this
+    }
+
     fun add(name: String, value: List<String>): Builder {
       map.merge(name, value, { x, y -> x + y })
       return this
@@ -269,6 +277,12 @@ data class Media(val type: MediaType, val song: String,
                  val albumId: String, val mid: String, val qid: String,
                  val sid: String, val station: String? = null)
 
+data class QueueItem(val song: String,
+                     val album: String, val artist: String,
+                     @JsonDeserialize(converter = Str2URLConverter::class) val imageUrl: URL?,
+                     val qid: String, val mid: String,
+                     val albumId: String)
+
 data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
                               val payload: List<Player>) : GenericResponse
 
@@ -299,3 +313,6 @@ data class ToggleMuteResponse(@JsonProperty("heos") override val status: Status)
 data class GetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class SetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetQueueResponse(@JsonProperty("heos") override val status: Status,
+                            val payload: List<QueueItem>) : GenericResponse
