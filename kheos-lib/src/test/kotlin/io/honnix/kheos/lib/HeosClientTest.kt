@@ -646,7 +646,7 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://player/play_next?pid=0$COMMAND_DELIMITER"
     }
 
-    "should clear queue" {
+    "should play previous" {
       val expectedResponse = PlayPreviousResponse(
           Status(GroupedCommand(PLAYER, PLAY_PREVIOUS),
               Result.SUCCESS, Message.Builder()
@@ -660,6 +660,45 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/play_previous?pid=0$COMMAND_DELIMITER"
+    }
+
+    "should get groups" {
+      val expectedResponse = GetGroupsResponse(
+          Status(GroupedCommand(GROUP, GET_GROUPS),
+              Result.SUCCESS, Message()),
+          listOf(
+              Group("foo", "0",
+                  listOf(GroupPlayer("foofoo", "0", Role.LEADER),
+                      GroupPlayer("foobar", "1", Role.MEMBER))),
+              Group("bar", "1",
+                  listOf(GroupPlayer("barbar", "1", Role.LEADER)))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getGroups()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/get_groups$COMMAND_DELIMITER"
+    }
+
+    "should get group info" {
+      val expectedResponse = GetGroupInfoResponse(
+          Status(GroupedCommand(GROUP, GET_GROUPS),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .build()),
+          Group("foo", "0",
+              listOf(GroupPlayer("foofoo", "0", Role.LEADER),
+                  GroupPlayer("foobar", "1", Role.MEMBER))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getGroupInfo("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/get_group_info?gid=0$COMMAND_DELIMITER"
     }
   }
 }

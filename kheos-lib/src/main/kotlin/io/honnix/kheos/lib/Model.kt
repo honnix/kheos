@@ -57,7 +57,9 @@ enum class Command(val command: String) {
   SAVE_QUEUE("save_queue"),
   CLEAR_QUEUE("clear_queue"),
   PLAY_NEXT("play_next"),
-  PLAY_PREVIOUS("play_previous");
+  PLAY_PREVIOUS("play_previous"),
+  GET_GROUPS("get_groups"),
+  GET_GROUP_INFO("get_group_info");
 
   companion object {
     @JsonCreator
@@ -177,7 +179,7 @@ enum class PlayShuffleState(private val state: String) {
   override fun toString() = state
 }
 
-enum class MediaType(val type: String) {
+enum class MediaType(private val type: String) {
   STATION("station"),
   SONG("song");
 
@@ -188,6 +190,19 @@ enum class MediaType(val type: String) {
 
   @JsonValue
   override fun toString() = type
+}
+
+enum class Role(private val role: String) {
+  LEADER("leader"),
+  MEMBER("member");
+
+  companion object {
+    @JsonCreator
+    fun from(role: String) = Role.valueOf(role.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = role
 }
 
 data class Message(private val content: Map<String, List<String>>) {
@@ -289,6 +304,10 @@ data class QueueItem(val song: String,
                      val qid: String, val mid: String,
                      val albumId: String)
 
+data class GroupPlayer(val name: String, val pid: String, val role: Role)
+
+data class Group(val name: String, val gid: String, val players: List<GroupPlayer>)
+
 data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
                               val payload: List<Player>) : GenericResponse
 
@@ -334,3 +353,9 @@ data class ClearQueueResponse(@JsonProperty("heos") override val status: Status)
 data class PlayNextResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class PlayPreviousResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetGroupsResponse(@JsonProperty("heos") override val status: Status,
+                             val payload: List<Group>) : GenericResponse
+
+data class GetGroupInfoResponse(@JsonProperty("heos") override val status: Status,
+                                val payload: Group) : GenericResponse

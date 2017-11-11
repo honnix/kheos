@@ -95,6 +95,10 @@ interface HeosClient : Closeable {
   fun playNext(pid: String): PlayNextResponse
 
   fun playPrevious(pid: String): PlayPreviousResponse
+
+  fun getGroups(): GetGroupsResponse
+
+  fun getGroupInfo(gid: String): GetGroupInfoResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -344,5 +348,14 @@ internal class HeosClientImpl(host: String,
       sendCommand(GroupedCommand(PLAYER, PLAY_PREVIOUS),
           AttributesBuilder()
               .add("pid", pid)
+              .build())
+
+  override fun getGroups(): GetGroupsResponse =
+      sendCommand(GroupedCommand(GROUP, GET_GROUPS))
+
+  override fun getGroupInfo(gid: String): GetGroupInfoResponse =
+      sendCommand(GroupedCommand(GROUP, GET_GROUP_INFO),
+          AttributesBuilder()
+              .add("gid", gid)
               .build())
 }
