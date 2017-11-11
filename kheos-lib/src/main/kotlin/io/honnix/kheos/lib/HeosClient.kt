@@ -89,11 +89,15 @@ interface HeosClient : Closeable {
   fun removeFromQueue(pid: String, qids: List<String>): RemoveFromQueueResponse
 
   fun saveQueue(pid: String, name: String): SaveQueueResponse
+
+  fun clearQueue(pid: String): ClearQueueResponse
 }
 
 internal class HeosClientImpl(host: String,
                               private val socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
-                              private val heartbeatExecutorService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()) : HeosClient {
+                              private val heartbeatExecutorService: ScheduledExecutorService
+                              = Executors.newSingleThreadScheduledExecutor())
+  : HeosClient {
   companion object {
     private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
   }
@@ -318,5 +322,11 @@ internal class HeosClientImpl(host: String,
           AttributesBuilder()
               .add("pid", pid)
               .add("name", name)
+              .build())
+
+  override fun clearQueue(pid: String): ClearQueueResponse =
+      sendCommand(GroupedCommand(PLAYER, CLEAR_QUEUE),
+          AttributesBuilder()
+              .add("pid", pid)
               .build())
 }

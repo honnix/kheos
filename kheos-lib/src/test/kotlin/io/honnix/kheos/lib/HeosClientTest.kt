@@ -613,5 +613,21 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/save_queue?pid=0&name=foo bar$COMMAND_DELIMITER"
     }
+
+    "should clear queue" {
+      val expectedResponse = ClearQueueResponse(
+          Status(GroupedCommand(PLAYER, CLEAR_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.clearQueue("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/clear_queue?pid=0$COMMAND_DELIMITER"
+    }
   }
 }
