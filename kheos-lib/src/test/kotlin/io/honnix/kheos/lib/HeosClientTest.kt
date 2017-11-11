@@ -556,5 +556,22 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/get_queue?pid=0$COMMAND_DELIMITER"
     }
+
+    "should play queue" {
+      val expectedResponse = PlayQueueResponse(
+          Status(GroupedCommand(PLAYER, PLAY_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("qid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.playQueue("0", "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/play_queue?pid=0&qid=0$COMMAND_DELIMITER"
+    }
   }
 }

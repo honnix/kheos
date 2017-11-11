@@ -51,7 +51,8 @@ enum class Command(val command: String) {
   TOGGLE_MUTE("toggle_mute"),
   GET_PLAY_MODE("get_play_mode"),
   SET_PLAY_MODE("set_play_mode"),
-  GET_QUEUE("get_queue");
+  GET_QUEUE("get_queue"),
+  PLAY_QUEUE("play_queue");
 
   companion object {
     @JsonCreator
@@ -316,3 +317,5 @@ data class SetPlayModeResponse(@JsonProperty("heos") override val status: Status
 
 data class GetQueueResponse(@JsonProperty("heos") override val status: Status,
                             val payload: List<QueueItem>) : GenericResponse
+
+data class PlayQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
