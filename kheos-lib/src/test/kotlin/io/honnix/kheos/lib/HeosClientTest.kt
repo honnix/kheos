@@ -312,7 +312,7 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://player/get_now_playing_media?pid=0$COMMAND_DELIMITER"
     }
 
-    "should get volume" {
+    "should get player volume" {
       val expectedResponse = GetVolumeResponse(
           Status(GroupedCommand(PLAYER, GET_VOLUME),
               Result.SUCCESS, Message.Builder()
@@ -322,14 +322,14 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.getVolume("0")
+      val actualResponse = heosClient.getVolume(PLAYER, "0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/get_volume?pid=0$COMMAND_DELIMITER"
     }
 
-    "should set volume" {
+    "should set player volume" {
       val expectedResponse = SetVolumeResponse(
           Status(GroupedCommand(PLAYER, SET_VOLUME),
               Result.SUCCESS, Message.Builder()
@@ -339,20 +339,20 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.setVolume("0", 10)
+      val actualResponse = heosClient.setVolume(PLAYER, "0", 10)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/set_volume?pid=0&level=10$COMMAND_DELIMITER"
     }
 
-    "should throw if volume level is illegal" {
+    "should throw if player volume level is illegal" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.setVolume("0", -1)
+        heosClient.setVolume(PLAYER, "0", -1)
       }
     }
 
-    "should volume up" {
+    "should player volume up" {
       val expectedResponse = VolumeUpResponse(
           Status(GroupedCommand(PLAYER, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
@@ -362,14 +362,14 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.volumeUp("0", 3)
+      val actualResponse = heosClient.volumeUp(PLAYER, "0", 3)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/volume_up?pid=0&step=3$COMMAND_DELIMITER"
     }
 
-    "should volume up with default step" {
+    "should player volume up with default step" {
       val expectedResponse = VolumeUpResponse(
           Status(GroupedCommand(PLAYER, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
@@ -379,20 +379,20 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.volumeUp("0")
+      val actualResponse = heosClient.volumeUp(PLAYER, "0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/volume_up?pid=0&step=5$COMMAND_DELIMITER"
     }
 
-    "should throw if volume up step level is illegal" {
+    "should throw if player volume up step level is illegal" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.volumeUp("0", -1)
+        heosClient.volumeUp(PLAYER, "0", -1)
       }
     }
 
-    "should volume down" {
+    "should player volume down" {
       val expectedResponse = VolumeDownResponse(
           Status(GroupedCommand(PLAYER, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
@@ -402,14 +402,14 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.volumeDown("0", 3)
+      val actualResponse = heosClient.volumeDown(PLAYER, "0", 3)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/volume_down?pid=0&step=3$COMMAND_DELIMITER"
     }
 
-    "should volume down with default step" {
+    "should player volume down with default step" {
       val expectedResponse = VolumeDownResponse(
           Status(GroupedCommand(PLAYER, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
@@ -419,20 +419,20 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.volumeDown("0")
+      val actualResponse = heosClient.volumeDown(PLAYER, "0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/volume_down?pid=0&step=5$COMMAND_DELIMITER"
     }
 
-    "should throw if volume down step level is illegal" {
+    "should throw if player volume down step level is illegal" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.volumeDown("0", 11)
+        heosClient.volumeDown(PLAYER, "0", 11)
       }
     }
 
-    "should get mute" {
+    "should get player mute" {
       val expectedResponse = GetMuteResponse(
           Status(GroupedCommand(PLAYER, GET_MUTE),
               Result.SUCCESS, Message.Builder()
@@ -441,31 +441,31 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.getMute("0")
+      val actualResponse = heosClient.getMute(PLAYER, "0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/get_mute?pid=0$COMMAND_DELIMITER"
     }
 
-    "should set mute" {
+    "should set player mute" {
       val expectedResponse = SetMuteResponse(
           Status(GroupedCommand(PLAYER, SET_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
-              .add("state", PlayerMuteState.OFF)
+              .add("state", MuteState.OFF)
               .build()))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.setMute("0", PlayerMuteState.OFF)
+      val actualResponse = heosClient.setMute(PLAYER, "0", MuteState.OFF)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://player/set_mute?pid=0&state=off$COMMAND_DELIMITER"
     }
 
-    "should toggle mute" {
+    "should toggle player mute" {
       val expectedResponse = ToggleMuteResponse(
           Status(GroupedCommand(PLAYER, TOGGLE_MUTE),
               Result.SUCCESS, Message.Builder()
@@ -474,7 +474,7 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.toggleMute("0")
+      val actualResponse = heosClient.toggleMute(PLAYER, "0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -717,6 +717,175 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://group/set_group?pid=0,1,2$COMMAND_DELIMITER"
+    }
+
+    "should get group volume" {
+      val expectedResponse = GetVolumeResponse(
+          Status(GroupedCommand(GROUP, GET_VOLUME),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("level", "10")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getVolume(GROUP, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/get_volume?gid=0$COMMAND_DELIMITER"
+    }
+
+    "should set group volume" {
+      val expectedResponse = SetVolumeResponse(
+          Status(GroupedCommand(GROUP, SET_VOLUME),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("level", "10")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setVolume(GROUP, "0", 10)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/set_volume?gid=0&level=10$COMMAND_DELIMITER"
+    }
+
+    "should throw if group volume level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.setVolume(GROUP, "0", -1)
+      }
+    }
+
+    "should group volume up" {
+      val expectedResponse = VolumeUpResponse(
+          Status(GroupedCommand(GROUP, VOLUME_UP),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("step", "3")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeUp(GROUP, "0", 3)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/volume_up?gid=0&step=3$COMMAND_DELIMITER"
+    }
+
+    "should group volume up with default step" {
+      val expectedResponse = VolumeUpResponse(
+          Status(GroupedCommand(GROUP, VOLUME_UP),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("step", "5")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeUp(GROUP, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/volume_up?gid=0&step=5$COMMAND_DELIMITER"
+    }
+
+    "should throw if group volume up step level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.volumeUp(GROUP, "0", -1)
+      }
+    }
+
+    "should group volume down" {
+      val expectedResponse = VolumeDownResponse(
+          Status(GroupedCommand(GROUP, VOLUME_DOWN),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("step", "3")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeDown(GROUP, "0", 3)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/volume_down?gid=0&step=3$COMMAND_DELIMITER"
+    }
+
+    "should group volume down with default step" {
+      val expectedResponse = VolumeDownResponse(
+          Status(GroupedCommand(GROUP, VOLUME_DOWN),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("step", "5")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.volumeDown(GROUP, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/volume_down?gid=0&step=5$COMMAND_DELIMITER"
+    }
+
+    "should throw if group volume down step level is illegal" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.volumeDown(GROUP, "0", 11)
+      }
+    }
+
+    "should get group mute" {
+      val expectedResponse = GetMuteResponse(
+          Status(GroupedCommand(GROUP, GET_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getMute(GROUP, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/get_mute?gid=0$COMMAND_DELIMITER"
+    }
+
+    "should set group mute" {
+      val expectedResponse = SetMuteResponse(
+          Status(GroupedCommand(GROUP, SET_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("state", MuteState.OFF)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setMute(GROUP, "0", MuteState.OFF)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/set_mute?gid=0&state=off$COMMAND_DELIMITER"
+    }
+
+    "should toggle group mute" {
+      val expectedResponse = ToggleMuteResponse(
+          Status(GroupedCommand(GROUP, TOGGLE_MUTE),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.toggleMute(GROUP, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/toggle_mute?gid=0$COMMAND_DELIMITER"
     }
   }
 }

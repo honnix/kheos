@@ -141,13 +141,13 @@ enum class PlayState(private val state: String) {
   override fun toString() = state
 }
 
-enum class PlayerMuteState(private val state: String) {
+enum class MuteState(private val state: String) {
   ON("on"),
   OFF("off");
 
   companion object {
     @JsonCreator
-    fun from(state: String) = PlayerMuteState.valueOf(state.toUpperCase())
+    fun from(state: String) = MuteState.valueOf(state.toUpperCase())
   }
 
   @JsonValue

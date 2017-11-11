@@ -64,19 +64,19 @@ interface HeosClient : Closeable {
 
   fun getNowPlayingMedia(pid: String): GetNowPlayingMediaResponse
 
-  fun getVolume(pid: String): GetVolumeResponse
+  fun getVolume(commandGroup: CommandGroup, id: String): GetVolumeResponse
 
-  fun setVolume(pid: String, level: Int): SetVolumeResponse
+  fun setVolume(commandGroup: CommandGroup, id: String, level: Int): SetVolumeResponse
 
-  fun volumeUp(pid: String, step: Int = 5): VolumeUpResponse
+  fun volumeUp(commandGroup: CommandGroup, id: String, step: Int = 5): VolumeUpResponse
 
-  fun volumeDown(pid: String, step: Int = 5): VolumeDownResponse
+  fun volumeDown(commandGroup: CommandGroup, id: String, step: Int = 5): VolumeDownResponse
 
-  fun getMute(pid: String): GetMuteResponse
+  fun getMute(commandGroup: CommandGroup, id: String): GetMuteResponse
 
-  fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse
+  fun setMute(commandGroup: CommandGroup, id: String, muteState: MuteState): SetMuteResponse
 
-  fun toggleMute(pid: String): ToggleMuteResponse
+  fun toggleMute(commandGroup: CommandGroup, id: String): ToggleMuteResponse
 
   fun getPlayMode(pid: String): GetPlayModeResponse
 
@@ -227,61 +227,73 @@ internal class HeosClientImpl(host: String,
       sendCommand(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
           AttributesBuilder().add("pid", pid).build())
 
-  override fun getVolume(pid: String): GetVolumeResponse =
-      sendCommand(GroupedCommand(PLAYER, GET_VOLUME),
-          AttributesBuilder().add("pid", pid).build())
+  override fun getVolume(commandGroup: CommandGroup, id: String): GetVolumeResponse =
+      sendCommand(GroupedCommand(commandGroup, GET_VOLUME),
+          AttributesBuilder()
+              .add("pid", { commandGroup === PLAYER }, { id })
+              .add("gid", { commandGroup === GROUP }, { id })
+              .build())
 
-  override fun setVolume(pid: String, level: Int): SetVolumeResponse {
+  override fun setVolume(commandGroup: CommandGroup, id: String, level: Int): SetVolumeResponse {
     if (level !in 0..100) {
       throw IllegalArgumentException("volume level should be in range [0, 100], $level given")
     }
 
-    return sendCommand(GroupedCommand(PLAYER, SET_VOLUME),
+    return sendCommand(GroupedCommand(commandGroup, SET_VOLUME),
         AttributesBuilder()
-            .add("pid", pid)
+            .add("pid", { commandGroup === PLAYER }, { id })
+            .add("gid", { commandGroup === GROUP }, { id })
             .add("level", level)
             .build())
   }
 
-  override fun volumeUp(pid: String, step: Int): VolumeUpResponse {
+  override fun volumeUp(commandGroup: CommandGroup, id: String, step: Int): VolumeUpResponse {
     if (step !in 1..10) {
       throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
     }
 
-    return sendCommand(GroupedCommand(PLAYER, VOLUME_UP),
+    return sendCommand(GroupedCommand(commandGroup, VOLUME_UP),
         AttributesBuilder()
-            .add("pid", pid)
+            .add("pid", { commandGroup === PLAYER }, { id })
+            .add("gid", { commandGroup === GROUP }, { id })
             .add("step", step)
             .build())
   }
 
-  override fun volumeDown(pid: String, step: Int): VolumeDownResponse {
+  override fun volumeDown(commandGroup: CommandGroup, id: String, step: Int): VolumeDownResponse {
     if (step !in 1..10) {
       throw IllegalArgumentException("volume step level should be in range [1, 10], $step given")
     }
 
-    return sendCommand(GroupedCommand(PLAYER, VOLUME_DOWN
-    ),
+    return sendCommand(GroupedCommand(commandGroup, VOLUME_DOWN),
         AttributesBuilder()
-            .add("pid", pid)
+            .add("pid", { commandGroup === PLAYER }, { id })
+            .add("gid", { commandGroup === GROUP }, { id })
             .add("step", step)
             .build())
   }
 
-  override fun getMute(pid: String): GetMuteResponse =
-      sendCommand(GroupedCommand(PLAYER, GET_MUTE),
-          AttributesBuilder().add("pid", pid).build())
-
-  override fun setMute(pid: String, state: PlayerMuteState): SetMuteResponse =
-      sendCommand(GroupedCommand(PLAYER, SET_MUTE),
+  override fun getMute(commandGroup: CommandGroup, id: String): GetMuteResponse =
+      sendCommand(GroupedCommand(commandGroup, GET_MUTE),
           AttributesBuilder()
-              .add("pid", pid)
-              .add("state", state)
+              .add("pid", { commandGroup === PLAYER }, { id })
+              .add("gid", { commandGroup === GROUP }, { id })
               .build())
 
-  override fun toggleMute(pid: String): ToggleMuteResponse =
-      sendCommand(GroupedCommand(PLAYER, TOGGLE_MUTE),
-          AttributesBuilder().add("pid", pid).build())
+  override fun setMute(commandGroup: CommandGroup, id: String, muteState: MuteState): SetMuteResponse =
+      sendCommand(GroupedCommand(commandGroup, SET_MUTE),
+          AttributesBuilder()
+              .add("pid", { commandGroup === PLAYER }, { id })
+              .add("gid", { commandGroup === GROUP }, { id })
+              .add("state", muteState)
+              .build())
+
+  override fun toggleMute(commandGroup: CommandGroup, id: String): ToggleMuteResponse =
+      sendCommand(GroupedCommand(commandGroup, TOGGLE_MUTE),
+          AttributesBuilder()
+              .add("pid", { commandGroup === PLAYER }, { id })
+              .add("gid", { commandGroup === GROUP }, { id })
+              .build())
 
   override fun getPlayMode(pid: String): GetPlayModeResponse =
       sendCommand(GroupedCommand(PLAYER, GET_PLAY_MODE),

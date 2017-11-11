@@ -24,10 +24,10 @@ class MessageTest : StringSpec() {
   init {
     "should get enum value" {
       val message = Message.Builder()
-          .add("state", PlayerMuteState.ON)
+          .add("state", MuteState.ON)
           .build()
 
-      message.enumValue("state", { PlayerMuteState.valueOf(it) }) shouldBe PlayerMuteState.ON
+      message.enumValue("state", { MuteState.valueOf(it) }) shouldBe MuteState.ON
     }
 
     "should get int value" {

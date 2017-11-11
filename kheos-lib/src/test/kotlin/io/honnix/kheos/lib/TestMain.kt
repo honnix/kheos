@@ -18,7 +18,7 @@
 package io.honnix.kheos.lib
 
 fun main(args: Array<String>) {
-  val a = Message.Builder().add("b", PlayerMuteState.ON).build()
-      .enumValue("a", { PlayerMuteState.valueOf(it) })
+  val a = Message.Builder().add("b", MuteState.ON).build()
+      .enumValue("a", { MuteState.valueOf(it) })
   println(a)
 }
