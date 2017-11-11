@@ -53,7 +53,8 @@ enum class Command(val command: String) {
   SET_PLAY_MODE("set_play_mode"),
   GET_QUEUE("get_queue"),
   PLAY_QUEUE("play_queue"),
-  REMOVE_FROM_QUEUE("remove_from_queue");
+  REMOVE_FROM_QUEUE("remove_from_queue"),
+  SAVE_QUEUE("save_queue");
 
   companion object {
     @JsonCreator
@@ -322,3 +323,5 @@ data class GetQueueResponse(@JsonProperty("heos") override val status: Status,
 data class PlayQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class RemoveFromQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SaveQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
