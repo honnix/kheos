@@ -21,6 +21,7 @@ import io.honnix.kheos.lib.Command.*
 import io.honnix.kheos.lib.CommandGroup.*
 import io.honnix.kheos.lib.Control.NETWORK
 import io.honnix.kheos.lib.MediaType.STATION
+import io.honnix.kheos.lib.MusicSourceType.*
 import io.honnix.kheos.lib.PlayState.PLAY
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
@@ -668,10 +669,10 @@ class HeosClientImplTest : StringSpec() {
               Result.SUCCESS, Message()),
           listOf(
               Group("foo", "0",
-                  listOf(GroupPlayer("foofoo", "0", Role.LEADER),
-                      GroupPlayer("foobar", "1", Role.MEMBER))),
+                  listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
+                      GroupedPlayer("foobar", "1", Role.MEMBER))),
               Group("bar", "1",
-                  listOf(GroupPlayer("barbar", "1", Role.LEADER)))))
+                  listOf(GroupedPlayer("barbar", "1", Role.LEADER)))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -689,8 +690,8 @@ class HeosClientImplTest : StringSpec() {
               .add("gid", "0")
               .build()),
           Group("foo", "0",
-              listOf(GroupPlayer("foofoo", "0", Role.LEADER),
-                  GroupPlayer("foobar", "1", Role.MEMBER))))
+              listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
+                  GroupedPlayer("foobar", "1", Role.MEMBER))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -886,6 +887,38 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://group/toggle_mute?gid=0$COMMAND_DELIMITER"
+    }
+
+    "should get music sources" {
+      val expectedResponse = GetMusicSourcesResponse(
+          Status(GroupedCommand(BROWSE, GET_MUSIC_SOURCES),
+              Result.SUCCESS, Message()),
+          listOf(
+              MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "0"),
+              MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "1")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getMusicSources()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/get_music_sources$COMMAND_DELIMITER"
+    }
+
+    "should get music source info" {
+      val expectedResponse = GetMusicSourceInfoResponse(
+          Status(GroupedCommand(BROWSE, GET_MUSIC_SOURCE_INFO),
+              Result.SUCCESS, Message()),
+          MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getMusicSourceInfo("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/get_source_info?sid=0$COMMAND_DELIMITER"
     }
   }
 }

@@ -60,11 +60,15 @@ enum class Command(val command: String) {
   PLAY_PREVIOUS("play_previous"),
   GET_GROUPS("get_groups"),
   GET_GROUP_INFO("get_group_info"),
-  SET_GROUP("set_group");
+  SET_GROUP("set_group"),
+  GET_MUSIC_SOURCES("get_music_sources"),
+  GET_MUSIC_SOURCE_INFO("get_source_info");
 
   companion object {
     @JsonCreator
-    fun from(command: String) = Command.valueOf(command.toUpperCase())
+    fun from(command: String) =
+        if (command != "get_source_info") Command.valueOf(command.toUpperCase())
+        else GET_MUSIC_SOURCE_INFO
   }
 
   @JsonValue
@@ -206,6 +210,21 @@ enum class Role(private val role: String) {
   override fun toString() = role
 }
 
+enum class MusicSourceType(private val type: String) {
+  MUSIC_SERVICE("music_service"),
+  HEOS_SERVICE("heos_service"),
+  HEOS_SERVER("heos_server"),
+  DLNA_SERVER("dlna_server");
+
+  companion object {
+    @JsonCreator
+    fun from(type: String) = Role.valueOf(type.toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = type
+}
+
 data class Message(private val content: Map<String, List<String>>) {
   constructor() : this(mapOf())
 
@@ -274,20 +293,6 @@ data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::clas
                   @JsonDeserialize(converter = Str2MessageConverter::class)
                   val message: Message)
 
-interface GenericResponse {
-  val status: Status
-}
-
-data class HeartbeatResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
-
-data class CheckAccountResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
-
-data class SignInResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
-
-data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
-
-data class RebootResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
-
 data class Player(val name: String, val pid: String,
                   val model: String, val version: String, val ip: String,
                   val network: String, val lineout: Lineout,
@@ -305,9 +310,28 @@ data class QueueItem(val song: String,
                      val qid: String, val mid: String,
                      val albumId: String)
 
-data class GroupPlayer(val name: String, val pid: String, val role: Role)
+data class GroupedPlayer(val name: String, val pid: String, val role: Role)
 
-data class Group(val name: String, val gid: String, val players: List<GroupPlayer>)
+data class Group(val name: String, val gid: String, val players: List<GroupedPlayer>)
+
+data class MusicSource(val name: String,
+                       @JsonDeserialize(converter = Str2URLConverter::class) val imageUrl: URL?,
+                       val type: MusicSourceType,
+                       val sid: String)
+
+interface GenericResponse {
+  val status: Status
+}
+
+data class HeartbeatResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class CheckAccountResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SignInResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RebootResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
                               val payload: List<Player>) : GenericResponse
@@ -362,3 +386,9 @@ data class GetGroupInfoResponse(@JsonProperty("heos") override val status: Statu
                                 val payload: Group) : GenericResponse
 
 data class SetGroupResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class GetMusicSourcesResponse(@JsonProperty("heos") override val status: Status,
+                                   val payload: List<MusicSource>) : GenericResponse
+
+data class GetMusicSourceInfoResponse(@JsonProperty("heos") override val status: Status,
+                                      val payload: MusicSource) : GenericResponse

@@ -101,6 +101,10 @@ interface HeosClient : Closeable {
   fun getGroupInfo(gid: String): GetGroupInfoResponse
 
   fun setGroup(pids: List<String>): SetGroupResponse
+
+  fun getMusicSources(): GetMusicSourcesResponse
+
+  fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -383,4 +387,13 @@ internal class HeosClientImpl(host: String,
             .add("pid", pids.joinToString(","))
             .build())
   }
+
+  override fun getMusicSources(): GetMusicSourcesResponse =
+      sendCommand(GroupedCommand(BROWSE, GET_MUSIC_SOURCES))
+
+  override fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse =
+      sendCommand(GroupedCommand(BROWSE, GET_MUSIC_SOURCE_INFO),
+          AttributesBuilder()
+              .add("sid", sid)
+              .build())
 }
