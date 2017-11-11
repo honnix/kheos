@@ -59,7 +59,8 @@ enum class Command(val command: String) {
   PLAY_NEXT("play_next"),
   PLAY_PREVIOUS("play_previous"),
   GET_GROUPS("get_groups"),
-  GET_GROUP_INFO("get_group_info");
+  GET_GROUP_INFO("get_group_info"),
+  SET_GROUP("set_group");
 
   companion object {
     @JsonCreator
@@ -359,3 +360,5 @@ data class GetGroupsResponse(@JsonProperty("heos") override val status: Status,
 
 data class GetGroupInfoResponse(@JsonProperty("heos") override val status: Status,
                                 val payload: Group) : GenericResponse
+
+data class SetGroupResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

@@ -99,6 +99,8 @@ interface HeosClient : Closeable {
   fun getGroups(): GetGroupsResponse
 
   fun getGroupInfo(gid: String): GetGroupInfoResponse
+
+  fun setGroup(pids: List<String>): SetGroupResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -358,4 +360,15 @@ internal class HeosClientImpl(host: String,
           AttributesBuilder()
               .add("gid", gid)
               .build())
+
+  override fun setGroup(pids: List<String>): SetGroupResponse {
+    if (pids.isEmpty()) {
+      throw IllegalArgumentException("at least one pid should be specified")
+    }
+
+    return sendCommand(GroupedCommand(GROUP, SET_GROUP),
+        AttributesBuilder()
+            .add("pid", pids.joinToString(","))
+            .build())
+  }
 }

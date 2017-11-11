@@ -700,5 +700,23 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://group/get_group_info?gid=0$COMMAND_DELIMITER"
     }
+
+    "should set group" {
+      val expectedResponse = SetGroupResponse(
+          Status(GroupedCommand(GROUP, SET_GROUP),
+              Result.SUCCESS, Message.Builder()
+              .add("gid", "0")
+              .add("name", "foo")
+              .add("pid", "0,1,2")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setGroup(listOf("0", "1", "2"))
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/set_group?pid=0,1,2$COMMAND_DELIMITER"
+    }
   }
 }
