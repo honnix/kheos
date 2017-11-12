@@ -67,7 +67,8 @@ enum class Command(val command: String) {
   GET_MUSIC_SOURCE_INFO("get_source_info"),
   BROWSE("browse"),
   GET_SEARCH_CRITERIA("get_search_criteria"),
-  SEARCH("search");
+  SEARCH("search"),
+  PLAY_STREAM("play_stream");
 
   companion object {
     @JsonCreator
@@ -510,3 +511,5 @@ data class GetSearchCriteriaResponse(@JsonProperty("heos") override val status: 
 
 data class SearchResponse(@JsonProperty("heos") override val status: Status,
                           val payload: List<Media>) : GenericResponse
+
+data class PlayStreamResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
