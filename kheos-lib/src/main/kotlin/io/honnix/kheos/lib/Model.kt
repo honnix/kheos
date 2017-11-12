@@ -72,7 +72,8 @@ enum class Command(val command: String) {
   PLAY_INPUT("play_input"),
   ADD_TO_QUEUE("add_to_queue"),
   RENAME_PLAYLIST("rename_playlist"),
-  DELETE_PLAYLIST("delete_playlist");
+  DELETE_PLAYLIST("delete_playlist"),
+  RETRIEVE_METADATA("retrieve_metadata");
 
   companion object {
     @JsonCreator
@@ -439,6 +440,12 @@ data class MediaStation(override val container: YesNo,
 
 data class SearchCriteria(val name: String, val scid: Int, val wildcard: YesNo)
 
+data class Image(@JsonDeserialize(converter = Str2URLConverter::class)
+                 val imageUrl: URL?,
+                 val width: Double)
+
+data class Metadata(val albumId: String, val images: List<Image>)
+
 interface GenericResponse {
   val status: Status
 }
@@ -540,3 +547,6 @@ data class AddToQueueResponse(@JsonProperty("heos") override val status: Status)
 data class RenamePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class DeletePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RetrieveMetadataResponse(@JsonProperty("heos") override val status: Status,
+                                    val payload: List<Metadata>) : GenericResponse

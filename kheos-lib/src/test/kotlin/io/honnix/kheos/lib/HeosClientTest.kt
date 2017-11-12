@@ -171,7 +171,7 @@ class HeosClientImplTest : StringSpec() {
     "should fail to check account due to broken socket" {
       `when`(socket.getOutputStream()).thenThrow(SocketException())
 
-      val exception = shouldThrow<HeosClientException> {
+      shouldThrow<HeosClientException> {
         heosClient.checkAccount()
       }
     }
@@ -1342,6 +1342,29 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe
           "heos://browse/delete_playlist?sid=0&cid=0$COMMAND_DELIMITER"
+    }
+
+    "should retrieve metadata" {
+      val expectedResponse = RetrieveMetadataResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("cid", "0")
+              .add("returned", 2)
+              .add("count", 2)
+              .build()),
+          listOf(Metadata("0", listOf(
+              Image(URL("http://example.com"), 10.0),
+              Image(URL("http://example.com"), 12.0)))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.retrieveMetadata("0", "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/retrieve_metadata?sid=0&cid=0$COMMAND_DELIMITER"
     }
   }
 }

@@ -128,6 +128,8 @@ interface HeosClient : Closeable {
   fun renamePlaylist(sid: String, cid: String, name: String): RenamePlaylistResponse
 
   fun deletePlaylist(sid: String, cid: String): DeletePlaylistResponse
+
+  fun retrieveMetadata(sid: String, cid: String): RetrieveMetadataResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -522,6 +524,14 @@ internal class HeosClientImpl(host: String,
   override fun deletePlaylist(sid: String, cid: String)
       : DeletePlaylistResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
+          AttributesBuilder()
+              .add("sid", sid)
+              .add("cid", cid)
+              .build())
+
+  override fun retrieveMetadata(sid: String, cid: String)
+      : RetrieveMetadataResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
           AttributesBuilder()
               .add("sid", sid)
               .add("cid", cid)
