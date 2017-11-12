@@ -65,7 +65,8 @@ enum class Command(val command: String) {
   SET_GROUP("set_group"),
   GET_MUSIC_SOURCES("get_music_sources"),
   GET_MUSIC_SOURCE_INFO("get_source_info"),
-  BROWSE("browse");
+  BROWSE("browse"),
+  GET_SEARCH_CRITERIA("get_search_criteria");
 
   companion object {
     @JsonCreator
@@ -415,6 +416,8 @@ data class MusicContainerStation(override val container: YesNo,
                                  override val imageUrl: URL?,
                                  override val mid: String) : MusicContainer
 
+data class SearchCriteria(val name: String, val scid: String, val wildcard: YesNo)
+
 interface GenericResponse {
   val status: Status
 }
@@ -500,3 +503,6 @@ data class BrowseTopMusicResponse(@JsonProperty("heos") override val status: Sta
 data class BrowseSourceContainersResponse(@JsonProperty("heos") override val status: Status,
                                           val payload: List<MusicContainer>,
                                           val options: Options = emptyList()) : GenericResponse
+
+data class GetSearchCriteriaResponse(@JsonProperty("heos") override val status: Status,
+                                     val payload: List<SearchCriteria>) : GenericResponse

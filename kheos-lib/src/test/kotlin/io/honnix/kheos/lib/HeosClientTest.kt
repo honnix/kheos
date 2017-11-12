@@ -1115,5 +1115,24 @@ class HeosClientImplTest : StringSpec() {
         heosClient.browseSourceContainers("0", "0", IntRange(-1, 10))
       }
     }
+
+    "should get search criteria" {
+      val expectedResponse = GetSearchCriteriaResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .build()),
+          listOf(
+              SearchCriteria("foo", "0", YES),
+              SearchCriteria("bar", "1", NO)))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getSearchCriteria("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/get_search_criteria?sid=0$COMMAND_DELIMITER"
+    }
   }
 }

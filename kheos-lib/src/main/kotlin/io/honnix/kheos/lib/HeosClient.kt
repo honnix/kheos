@@ -80,7 +80,8 @@ interface HeosClient : Closeable {
 
   fun getPlayMode(pid: String): GetPlayModeResponse
 
-  fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState): SetPlayModeResponse
+  fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState)
+      : SetPlayModeResponse
 
   fun getQueue(pid: String, range: IntRange = IntRange.EMPTY): GetQueueResponse
 
@@ -110,7 +111,10 @@ interface HeosClient : Closeable {
 
   fun browseTopMusic(sid: String, range: IntRange = IntRange.EMPTY): BrowseTopMusicResponse
 
-  fun browseSourceContainers(sid: String, cid: String, range: IntRange = IntRange.EMPTY): BrowseSourceContainersResponse
+  fun browseSourceContainers(sid: String, cid: String, range: IntRange = IntRange.EMPTY)
+      : BrowseSourceContainersResponse
+
+  fun getSearchCriteria(sid: String): GetSearchCriteriaResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -440,4 +444,10 @@ internal class HeosClientImpl(host: String,
             .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
             .build())
   }
+
+  override fun getSearchCriteria(sid: String): GetSearchCriteriaResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
+          AttributesBuilder()
+              .add("sid", sid)
+              .build())
 }
