@@ -105,6 +105,10 @@ interface HeosClient : Closeable {
   fun getMusicSources(): GetMusicSourcesResponse
 
   fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse
+
+  fun browseMusicSources(sid: String, range: IntRange = IntRange.EMPTY): BrowseMediaSourcesResponse
+
+  fun browseTopMusic(sid: String, range: IntRange = IntRange.EMPTY): BrowseTopMusicResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -389,11 +393,35 @@ internal class HeosClientImpl(host: String,
   }
 
   override fun getMusicSources(): GetMusicSourcesResponse =
-      sendCommand(GroupedCommand(BROWSE, GET_MUSIC_SOURCES))
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES))
 
   override fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse =
-      sendCommand(GroupedCommand(BROWSE, GET_MUSIC_SOURCE_INFO),
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCE_INFO),
           AttributesBuilder()
               .add("sid", sid)
               .build())
+
+  override fun browseMusicSources(sid: String, range: IntRange): BrowseMediaSourcesResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    return sendCommand(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+        AttributesBuilder()
+            .add("sid", sid)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
+
+  override fun browseTopMusic(sid: String, range: IntRange): BrowseTopMusicResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    return sendCommand(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+        AttributesBuilder()
+            .add("sid", sid)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
 }

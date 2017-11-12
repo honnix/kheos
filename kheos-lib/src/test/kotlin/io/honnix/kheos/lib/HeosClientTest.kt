@@ -23,6 +23,7 @@ import io.honnix.kheos.lib.Control.NETWORK
 import io.honnix.kheos.lib.MediaType.STATION
 import io.honnix.kheos.lib.MusicSourceType.*
 import io.honnix.kheos.lib.PlayState.PLAY
+import io.honnix.kheos.lib.YesNo.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
 import io.kotlintest.mock.`when`
@@ -300,7 +301,7 @@ class HeosClientImplTest : StringSpec() {
               .build()),
           Media(STATION, "song", "album", "artist",
               URL("http://example.com"), "0", "0", "0", "0",
-              station = "station"),
+              "station"),
           listOf(mapOf("play" to
               listOf(mapOf("id" to "19", "name" to "Add to HEOS Favorites")))))
 
@@ -891,7 +892,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get music sources" {
       val expectedResponse = GetMusicSourcesResponse(
-          Status(GroupedCommand(BROWSE, GET_MUSIC_SOURCES),
+          Status(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES),
               Result.SUCCESS, Message()),
           listOf(
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "0"),
@@ -908,7 +909,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get music source info" {
       val expectedResponse = GetMusicSourceInfoResponse(
-          Status(GroupedCommand(BROWSE, GET_MUSIC_SOURCE_INFO),
+          Status(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCE_INFO),
               Result.SUCCESS, Message()),
           MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
 
@@ -919,6 +920,70 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://browse/get_source_info?sid=0$COMMAND_DELIMITER"
+    }
+
+    "should browse music sources" {
+      val expectedResponse = BrowseMediaSourcesResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("returned", 2)
+              .add("count", 2)
+              .build()),
+          listOf(
+              MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
+              MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
+          listOf(mapOf("browse" to
+              listOf(mapOf("id" to "13", "name" to "create new station")))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.browseMusicSources("0", IntRange(0, 10))
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/browse?sid=0&range=0,10$COMMAND_DELIMITER"
+    }
+
+    "should throw if range start < 0 when browsing music sources" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.browseMusicSources("0", IntRange(-1, 10))
+      }
+    }
+
+    "should browse top music" {
+      val expectedResponse = BrowseTopMusicResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("returned", 5)
+              .add("count", 5)
+              .build()),
+          listOf(
+              TopMusicArtist(YES, NO, TopMusicType.ARTIST, "artist name",
+                  URL("http://example.com"), "0", "0"),
+              TopMusicAlbum(YES, YES, TopMusicType.ALBUM, "album name",
+                  URL("http://example.com"), "0", "0", "1"),
+              TopMusicSong(NO, YES, TopMusicType.SONG, "song name",
+                  URL("http://example.com"), "artist name", "album name", "2"),
+              TopMusicContainer(YES, NO, TopMusicType.CONTAINER, "container name",
+                  URL("http://example.com"), "0", "3"),
+              TopMusicStation(NO, YES, TopMusicType.STATION, "station name",
+                  URL("http://example.com"), "4")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.browseTopMusic("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/browse?sid=0$COMMAND_DELIMITER"
+    }
+
+    "should throw if range start < 0 when browsing top music" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.browseTopMusic("0", IntRange(-1, 10))
+      }
     }
   }
 }

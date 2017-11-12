@@ -52,6 +52,6 @@ object JSON {
       .registerModule(KotlinModule())
 
   fun serialize(value: Any): ByteArray = mapper.writeValueAsBytes(value)
-  
+
   inline fun <reified T> deserialize(bytes: ByteArray) = mapper.readValue(bytes, T::class.java)
 }
