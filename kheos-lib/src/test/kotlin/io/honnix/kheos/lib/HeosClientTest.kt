@@ -909,7 +909,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get music source info" {
       val expectedResponse = GetMusicSourceInfoResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCE_INFO),
+          Status(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
               Result.SUCCESS, Message()),
           MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
 
@@ -1305,6 +1305,43 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe
           "heos://browse/add_to_queue?pid=0&sid=0&cid=0&mid=0&aid=3$COMMAND_DELIMITER"
+    }
+
+    "should rename playlist" {
+      val expectedResponse = RenamePlaylistResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("cid", "0")
+              .add("name", "foo")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.renamePlaylist("0", "0", "foo")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/rename_playlist?sid=0&cid=0&name=foo$COMMAND_DELIMITER"
+    }
+
+    "should delete playlist" {
+      val expectedResponse = DeletePlaylistResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("cid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.deletePlaylist("0", "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/delete_playlist?sid=0&cid=0$COMMAND_DELIMITER"
     }
   }
 }

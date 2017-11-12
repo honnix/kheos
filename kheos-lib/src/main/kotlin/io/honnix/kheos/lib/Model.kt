@@ -64,19 +64,19 @@ enum class Command(val command: String) {
   GET_GROUP_INFO("get_group_info"),
   SET_GROUP("set_group"),
   GET_MUSIC_SOURCES("get_music_sources"),
-  GET_MUSIC_SOURCE_INFO("get_source_info"),
+  GET_SOURCE_INFO("get_source_info"),
   BROWSE("browse"),
   GET_SEARCH_CRITERIA("get_search_criteria"),
   SEARCH("search"),
   PLAY_STREAM("play_stream"),
   PLAY_INPUT("play_input"),
-  ADD_TO_QUEUE("add_to_queue");
+  ADD_TO_QUEUE("add_to_queue"),
+  RENAME_PLAYLIST("rename_playlist"),
+  DELETE_PLAYLIST("delete_playlist");
 
   companion object {
     @JsonCreator
-    fun from(command: String) =
-        if (command != "get_source_info") Command.valueOf(command.toUpperCase())
-        else GET_MUSIC_SOURCE_INFO
+    fun from(command: String) = Command.valueOf(command.toUpperCase())
   }
 
   @JsonValue
@@ -536,3 +536,7 @@ data class PlayStreamResponse(@JsonProperty("heos") override val status: Status)
 data class PlayInputResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class AddToQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RenamePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class DeletePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse

@@ -124,6 +124,10 @@ interface HeosClient : Closeable {
 
   fun addToQueue(pid: String, sid: String, cid: String,
                  aid: AddCriteriaId, mid: String = ""): AddToQueueResponse
+
+  fun renamePlaylist(sid: String, cid: String, name: String): RenamePlaylistResponse
+
+  fun deletePlaylist(sid: String, cid: String): DeletePlaylistResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -411,7 +415,7 @@ internal class HeosClientImpl(host: String,
       sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES))
 
   override fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse =
-      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCE_INFO),
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
           AttributesBuilder()
               .add("sid", sid)
               .build())
@@ -500,9 +504,26 @@ internal class HeosClientImpl(host: String,
       sendCommand(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
           AttributesBuilder()
               .add("pid", pid)
-              .add("sid", sid::isNotEmpty, { sid })
+              .add("sid", sid)
               .add("cid", cid)
               .add("mid", mid::isNotEmpty, { mid })
               .add("aid", aid.id)
+              .build())
+
+  override fun renamePlaylist(sid: String, cid: String, name: String)
+      : RenamePlaylistResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
+          AttributesBuilder()
+              .add("sid", sid)
+              .add("cid", cid)
+              .add("name", name)
+              .build())
+
+  override fun deletePlaylist(sid: String, cid: String)
+      : DeletePlaylistResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
+          AttributesBuilder()
+              .add("sid", sid)
+              .add("cid", cid)
               .build())
 }
