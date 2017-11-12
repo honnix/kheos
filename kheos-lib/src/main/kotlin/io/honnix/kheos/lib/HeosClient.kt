@@ -130,6 +130,11 @@ interface HeosClient : Closeable {
   fun deletePlaylist(sid: String, cid: String): DeletePlaylistResponse
 
   fun retrieveMetadata(sid: String, cid: String): RetrieveMetadataResponse
+
+  fun getServiceOptions(): GetServiceOptionsResponse
+
+  fun setServiceOption(option: Option, attributes: Attributes, range: IntRange = IntRange.EMPTY)
+      : SetServiceOptionResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -512,8 +517,7 @@ internal class HeosClientImpl(host: String,
               .add("aid", aid.id)
               .build())
 
-  override fun renamePlaylist(sid: String, cid: String, name: String)
-      : RenamePlaylistResponse =
+  override fun renamePlaylist(sid: String, cid: String, name: String): RenamePlaylistResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
           AttributesBuilder()
               .add("sid", sid)
@@ -521,19 +525,39 @@ internal class HeosClientImpl(host: String,
               .add("name", name)
               .build())
 
-  override fun deletePlaylist(sid: String, cid: String)
-      : DeletePlaylistResponse =
+  override fun deletePlaylist(sid: String, cid: String): DeletePlaylistResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
           AttributesBuilder()
               .add("sid", sid)
               .add("cid", cid)
               .build())
 
-  override fun retrieveMetadata(sid: String, cid: String)
-      : RetrieveMetadataResponse =
+  override fun retrieveMetadata(sid: String, cid: String): RetrieveMetadataResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
           AttributesBuilder()
               .add("sid", sid)
               .add("cid", cid)
               .build())
+
+  override fun getServiceOptions(): GetServiceOptionsResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS))
+
+  override fun setServiceOption(option: Option, attributes: Attributes, range: IntRange)
+      : SetServiceOptionResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    if (option != Option.CREATE_NEW_STATION && !range.isEmpty()) {
+      throw IllegalArgumentException("only ${Option.CREATE_NEW_STATION} supports range, $option given")
+    }
+
+    return sendCommand(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
+        AttributesBuilder()
+            .add("option", option.id)
+            .add(attributes)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
+
 }

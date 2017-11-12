@@ -303,7 +303,7 @@ class HeosClientImplTest : StringSpec() {
               URL("http://example.com"), "0", "0", "0", "0",
               "station"),
           listOf(mapOf("play" to
-              listOf(Option(19, "Add to HEOS Favorites")))))
+              listOf(Option.ADD_TO_HEOS_FAVORITES))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -934,7 +934,7 @@ class HeosClientImplTest : StringSpec() {
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
               MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
           listOf(mapOf("browse" to
-              listOf(Option(13, "Create New Station")))))
+              listOf(Option.CREATE_NEW_STATION))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -957,7 +957,7 @@ class HeosClientImplTest : StringSpec() {
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
               MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
           listOf(mapOf("browse" to
-              listOf(Option(13, "Create New Station")))))
+              listOf(Option.CREATE_NEW_STATION))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1065,7 +1065,7 @@ class HeosClientImplTest : StringSpec() {
               MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
-              listOf(Option(4, "Add Playlist to Library")))))
+              listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1099,7 +1099,7 @@ class HeosClientImplTest : StringSpec() {
               MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
-              listOf(Option(4, "Add Playlist to Library")))))
+              listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1365,6 +1365,69 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe
           "heos://browse/retrieve_metadata?sid=0&cid=0$COMMAND_DELIMITER"
+    }
+
+    "should get service options" {
+      val expectedResponse = GetServiceOptionsResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS),
+              Result.SUCCESS, Message()),
+          listOf(mapOf("play" to
+              listOf(
+                  Option.THUMBS_UP,
+                  Option.THUMBS_DOWN))))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.getServiceOptions()
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/get_service_options$COMMAND_DELIMITER"
+    }
+
+    "should set service option" {
+      val expectedResponse = SetServiceOptionResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
+              Result.SUCCESS, Message.Builder()
+              .add("option", Option.CREATE_NEW_STATION.id)
+              .add("sid", "0")
+              .add("name", "foo")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setServiceOption(Option.CREATE_NEW_STATION,
+          AttributesBuilder()
+              .add("sid", "0")
+              .add("name", "foo")
+              .build())
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/set_service_option?option=13&sid=0&name=foo$COMMAND_DELIMITER"
+    }
+
+    "should throw if range start < 0 when setting service option" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.setServiceOption(Option.CREATE_NEW_STATION,
+            AttributesBuilder()
+                .add("sid", "0")
+                .add("name", "foo")
+                .build(),
+            IntRange(-1, 10))
+      }
+    }
+
+    "should throw if specify range for option other than ${Option.CREATE_NEW_STATION}" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.setServiceOption(Option.ADD_TO_HEOS_FAVORITES,
+            AttributesBuilder()
+                .add("pid", "0")
+                .build(),
+            IntRange(0, 10))
+      }
     }
   }
 }

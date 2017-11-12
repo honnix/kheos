@@ -73,7 +73,9 @@ enum class Command(val command: String) {
   ADD_TO_QUEUE("add_to_queue"),
   RENAME_PLAYLIST("rename_playlist"),
   DELETE_PLAYLIST("delete_playlist"),
-  RETRIEVE_METADATA("retrieve_metadata");
+  RETRIEVE_METADATA("retrieve_metadata"),
+  GET_SERVICE_OPTIONS("get_service_options"),
+  SET_SERVICE_OPTION("set_service_option");
 
   companion object {
     @JsonCreator
@@ -299,6 +301,11 @@ data class Message(private val content: Map<String, List<String>>) {
       return this
     }
 
+    fun add(message: Message): Builder {
+      message.content.entries.forEach { add(it.key, it.value) }
+      return this
+    }
+
     fun build() = Message(map.toMap())
   }
 
@@ -324,11 +331,39 @@ data class Message(private val content: Map<String, List<String>>) {
   }
 }
 
-data class Option(val id: Int, val name: String)
-
 typealias Attributes = Message
 typealias AttributesBuilder = Message.Builder
 typealias Options = List<Map<String, List<Option>>>
+
+data class Option(val id: Int, val name: String) {
+  companion object {
+    val ADD_TRACK_TO_LIBRARY = Option(1, "Add Track to Library")
+
+    val ADD_ALBUM_TO_LIBRARY = Option(2, "Add Album to Library")
+
+    val ADD_STATION_TO_LIBRARY = Option(3, "Add Station to Library")
+
+    val ADD_PLAYLIST_TO_LIBRARY = Option(4, "Add Playlist to Library")
+
+    val REMOVE_TRACK_FROM_LIBRARY = Option(5, "Remove Track from Library")
+
+    val REMOVE_ALBUM_FROM_LIBRARY = Option(6, "Remove Album from Library")
+
+    val REMOVE_STATION_FROM_LIBRARY = Option(7, "Remove Station from Library")
+
+    val REMOVE_PLAYLIST_FROM_LIBRARY = Option(8, "Remove Playlist from Library")
+
+    val THUMBS_UP = Option(11, "Thumbs Up")
+
+    val THUMBS_DOWN = Option(12, "Thumbs Down")
+
+    val CREATE_NEW_STATION = Option(13, "Create New Station")
+
+    val ADD_TO_HEOS_FAVORITES = Option(19, "Add to HEOS Favorites")
+
+    val REMOVE_FROM_HEOS_FAVORITES = Option(20, "Remove from HEOS Favorites")
+  }
+}
 
 data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
                   val command: GroupedCommand,
@@ -550,3 +585,8 @@ data class DeletePlaylistResponse(@JsonProperty("heos") override val status: Sta
 
 data class RetrieveMetadataResponse(@JsonProperty("heos") override val status: Status,
                                     val payload: List<Metadata>) : GenericResponse
+
+data class GetServiceOptionsResponse(@JsonProperty("heos") override val status: Status,
+                                     val payload: Options) : GenericResponse
+
+data class SetServiceOptionResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
