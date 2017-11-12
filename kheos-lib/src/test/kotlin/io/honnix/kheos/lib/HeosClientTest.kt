@@ -299,7 +299,7 @@ class HeosClientImplTest : StringSpec() {
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()),
-          Media(STATION, "song", "album", "artist",
+          NowPlayingMedia(STATION, "song", "album", "artist",
               URL("http://example.com"), "0", "0", "0", "0",
               "station"),
           listOf(mapOf("play" to
@@ -1133,6 +1133,78 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://browse/get_search_criteria?sid=0$COMMAND_DELIMITER"
+    }
+
+    "should search" {
+      val expectedResponse = SearchResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("search", "*")
+              .add("scid", "0")
+              .add("returned", 6)
+              .add("count", 6)
+              .build()),
+          listOf(
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                  URL("http://example.com"), "0", "0"),
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                  URL("http://example.com"), "0", "0", "1"),
+              MediaSong(NO, YES, MediaType.SONG, "song name",
+                  URL("http://example.com"), "artist name", "album name", "2"),
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                  URL("http://example.com"), "0", "3"),
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                  URL("http://example.com"), "0", "4"),
+              MediaStation(NO, YES, MediaType.STATION, "station name",
+                  URL("http://example.com"), "5")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.search("0", "*", "0", IntRange(0, 10))
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/search?sid=0&search=*&scid=0&range=0,10$COMMAND_DELIMITER"
+    }
+
+    "should search if range is empty" {
+      val expectedResponse = SearchResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+              Result.SUCCESS, Message.Builder()
+              .add("sid", "0")
+              .add("search", "*")
+              .add("scid", "0")
+              .add("returned", 6)
+              .add("count", 6)
+              .build()),
+          listOf(
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                  URL("http://example.com"), "0", "0"),
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                  URL("http://example.com"), "0", "0", "1"),
+              MediaSong(NO, YES, MediaType.SONG, "song name",
+                  URL("http://example.com"), "artist name", "album name", "2"),
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                  URL("http://example.com"), "0", "3"),
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                  URL("http://example.com"), "0", "4"),
+              MediaStation(NO, YES, MediaType.STATION, "station name",
+                  URL("http://example.com"), "5")))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.search("0", "*", "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://browse/search?sid=0&search=*&scid=0$COMMAND_DELIMITER"
+    }
+
+    "should throw if range start < 0 when searching" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.search("0", "*", "0", IntRange(-1, 10))
+      }
     }
   }
 }

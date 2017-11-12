@@ -115,6 +115,8 @@ interface HeosClient : Closeable {
       : BrowseSourceContainersResponse
 
   fun getSearchCriteria(sid: String): GetSearchCriteriaResponse
+
+  fun search(sid: String, search: String, scid: String, range: IntRange = IntRange.EMPTY): SearchResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -450,4 +452,18 @@ internal class HeosClientImpl(host: String,
           AttributesBuilder()
               .add("sid", sid)
               .build())
+
+  override fun search(sid: String, search: String, scid: String, range: IntRange): SearchResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    return sendCommand(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+        AttributesBuilder()
+            .add("sid", sid)
+            .add("search", search)
+            .add("scid", scid)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
 }

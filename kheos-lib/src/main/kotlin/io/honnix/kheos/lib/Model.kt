@@ -66,7 +66,8 @@ enum class Command(val command: String) {
   GET_MUSIC_SOURCES("get_music_sources"),
   GET_MUSIC_SOURCE_INFO("get_source_info"),
   BROWSE("browse"),
-  GET_SEARCH_CRITERIA("get_search_criteria");
+  GET_SEARCH_CRITERIA("get_search_criteria"),
+  SEARCH("search");
 
   companion object {
     @JsonCreator
@@ -319,11 +320,11 @@ data class Player(val name: String, val pid: String,
                   val network: String, val lineout: Lineout,
                   val gid: String? = null, val control: Control? = null)
 
-data class Media(val type: MediaType, val song: String,
-                 val album: String, val artist: String,
-                 @JsonDeserialize(converter = Str2URLConverter::class) val imageUrl: URL?,
-                 val albumId: String, val mid: String, val qid: String,
-                 val sid: String, val station: String? = null)
+data class NowPlayingMedia(val type: MediaType, val song: String,
+                           val album: String, val artist: String,
+                           @JsonDeserialize(converter = Str2URLConverter::class) val imageUrl: URL?,
+                           val albumId: String, val mid: String, val qid: String,
+                           val sid: String, val station: String? = null)
 
 data class QueueItem(val song: String,
                      val album: String, val artist: String,
@@ -352,7 +353,7 @@ data class MusicSource(val name: String,
     JsonSubTypes.Type(value = MediaGenre::class, name = "genre"),
     JsonSubTypes.Type(value = MediaContainer::class, name = "container"),
     JsonSubTypes.Type(value = MediaStation::class, name = "station"))
-interface MediaBase {
+interface Media {
   val container: YesNo
   val playable: YesNo
   val type: MediaType
@@ -368,7 +369,7 @@ data class MediaArtist(override val container: YesNo,
                        @JsonDeserialize(converter = Str2URLConverter::class)
                        override val imageUrl: URL?,
                        val cid: String,
-                       override val mid: String) : MediaBase
+                       override val mid: String) : Media
 
 data class MediaAlbum(override val container: YesNo,
                       override val playable: YesNo,
@@ -378,7 +379,7 @@ data class MediaAlbum(override val container: YesNo,
                       override val imageUrl: URL?,
                       val artist: String,
                       val cid: String,
-                      override val mid: String) : MediaBase
+                      override val mid: String) : Media
 
 data class MediaSong(override val container: YesNo,
                      override val playable: YesNo,
@@ -388,7 +389,7 @@ data class MediaSong(override val container: YesNo,
                      override val imageUrl: URL?,
                      val artist: String,
                      val album: String,
-                     override val mid: String) : MediaBase
+                     override val mid: String) : Media
 
 data class MediaGenre(override val container: YesNo,
                       override val playable: YesNo,
@@ -397,7 +398,7 @@ data class MediaGenre(override val container: YesNo,
                       @JsonDeserialize(converter = Str2URLConverter::class)
                       override val imageUrl: URL?,
                       val cid: String,
-                      override val mid: String) : MediaBase
+                      override val mid: String) : Media
 
 data class MediaContainer(override val container: YesNo,
                           override val playable: YesNo,
@@ -406,7 +407,7 @@ data class MediaContainer(override val container: YesNo,
                           @JsonDeserialize(converter = Str2URLConverter::class)
                           override val imageUrl: URL?,
                           val cid: String,
-                          override val mid: String) : MediaBase
+                          override val mid: String) : Media
 
 data class MediaStation(override val container: YesNo,
                         override val playable: YesNo,
@@ -414,7 +415,7 @@ data class MediaStation(override val container: YesNo,
                         override val name: String,
                         @JsonDeserialize(converter = Str2URLConverter::class)
                         override val imageUrl: URL?,
-                        override val mid: String) : MediaBase
+                        override val mid: String) : Media
 
 data class SearchCriteria(val name: String, val scid: String, val wildcard: YesNo)
 
@@ -443,7 +444,7 @@ data class GetPlayStateResponse(@JsonProperty("heos") override val status: Statu
 data class SetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class GetNowPlayingMediaResponse(@JsonProperty("heos") override val status: Status,
-                                      val payload: Media,
+                                      val payload: NowPlayingMedia,
                                       val options: Options = emptyList()) : GenericResponse
 
 data class GetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
@@ -498,11 +499,14 @@ data class BrowseMediaSourcesResponse(@JsonProperty("heos") override val status:
                                       val options: Options = emptyList()) : GenericResponse
 
 data class BrowseTopMusicResponse(@JsonProperty("heos") override val status: Status,
-                                  val payload: List<MediaBase>) : GenericResponse
+                                  val payload: List<Media>) : GenericResponse
 
 data class BrowseSourceContainersResponse(@JsonProperty("heos") override val status: Status,
-                                          val payload: List<MediaBase>,
+                                          val payload: List<Media>,
                                           val options: Options = emptyList()) : GenericResponse
 
 data class GetSearchCriteriaResponse(@JsonProperty("heos") override val status: Status,
                                      val payload: List<SearchCriteria>) : GenericResponse
+
+data class SearchResponse(@JsonProperty("heos") override val status: Status,
+                          val payload: List<Media>) : GenericResponse
