@@ -983,17 +983,17 @@ class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MusicContainerArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MusicContainerAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MusicContainerSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, MediaType.SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MusicContainerGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MusicContainerContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MusicContainerStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -1014,17 +1014,17 @@ class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MusicContainerArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MusicContainerAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MusicContainerSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, MediaType.SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MusicContainerGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MusicContainerContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MusicContainerStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -1052,17 +1052,17 @@ class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MusicContainerArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MusicContainerAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MusicContainerSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, MediaType.SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MusicContainerGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MusicContainerContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MusicContainerStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
               listOf(mapOf("id" to "4", "name" to "Add Playlist to Library")))))
@@ -1086,17 +1086,17 @@ class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MusicContainerArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MusicContainerAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MusicContainerSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, MediaType.SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MusicContainerGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MusicContainerContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MusicContainerStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
               listOf(mapOf("id" to "4", "name" to "Add Playlist to Library")))))

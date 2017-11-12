@@ -346,13 +346,13 @@ data class MusicSource(val name: String,
     property = "type",
     visible = true)
 @JsonSubTypes(
-    JsonSubTypes.Type(value = MusicContainerArtist::class, name = "artist"),
-    JsonSubTypes.Type(value = MusicContainerAlbum::class, name = "album"),
-    JsonSubTypes.Type(value = MusicContainerSong::class, name = "song"),
-    JsonSubTypes.Type(value = MusicContainerGenre::class, name = "genre"),
-    JsonSubTypes.Type(value = MusicContainerContainer::class, name = "container"),
-    JsonSubTypes.Type(value = MusicContainerStation::class, name = "station"))
-interface MusicContainer {
+    JsonSubTypes.Type(value = MediaArtist::class, name = "artist"),
+    JsonSubTypes.Type(value = MediaAlbum::class, name = "album"),
+    JsonSubTypes.Type(value = MediaSong::class, name = "song"),
+    JsonSubTypes.Type(value = MediaGenre::class, name = "genre"),
+    JsonSubTypes.Type(value = MediaContainer::class, name = "container"),
+    JsonSubTypes.Type(value = MediaStation::class, name = "station"))
+interface MediaBase {
   val container: YesNo
   val playable: YesNo
   val type: MediaType
@@ -361,60 +361,60 @@ interface MusicContainer {
   val mid: String
 }
 
-data class MusicContainerArtist(override val container: YesNo,
-                                override val playable: YesNo,
-                                override val type: MediaType,
-                                override val name: String,
-                                @JsonDeserialize(converter = Str2URLConverter::class)
-                                override val imageUrl: URL?,
-                                val cid: String,
-                                override val mid: String) : MusicContainer
+data class MediaArtist(override val container: YesNo,
+                       override val playable: YesNo,
+                       override val type: MediaType,
+                       override val name: String,
+                       @JsonDeserialize(converter = Str2URLConverter::class)
+                       override val imageUrl: URL?,
+                       val cid: String,
+                       override val mid: String) : MediaBase
 
-data class MusicContainerAlbum(override val container: YesNo,
-                               override val playable: YesNo,
-                               override val type: MediaType,
-                               override val name: String,
-                               @JsonDeserialize(converter = Str2URLConverter::class)
-                               override val imageUrl: URL?,
-                               val artist: String,
-                               val cid: String,
-                               override val mid: String) : MusicContainer
+data class MediaAlbum(override val container: YesNo,
+                      override val playable: YesNo,
+                      override val type: MediaType,
+                      override val name: String,
+                      @JsonDeserialize(converter = Str2URLConverter::class)
+                      override val imageUrl: URL?,
+                      val artist: String,
+                      val cid: String,
+                      override val mid: String) : MediaBase
 
-data class MusicContainerSong(override val container: YesNo,
-                              override val playable: YesNo,
-                              override val type: MediaType,
-                              override val name: String,
-                              @JsonDeserialize(converter = Str2URLConverter::class)
-                              override val imageUrl: URL?,
-                              val artist: String,
-                              val album: String,
-                              override val mid: String) : MusicContainer
+data class MediaSong(override val container: YesNo,
+                     override val playable: YesNo,
+                     override val type: MediaType,
+                     override val name: String,
+                     @JsonDeserialize(converter = Str2URLConverter::class)
+                     override val imageUrl: URL?,
+                     val artist: String,
+                     val album: String,
+                     override val mid: String) : MediaBase
 
-data class MusicContainerGenre(override val container: YesNo,
-                               override val playable: YesNo,
-                               override val type: MediaType,
-                               override val name: String,
-                               @JsonDeserialize(converter = Str2URLConverter::class)
-                               override val imageUrl: URL?,
-                               val cid: String,
-                               override val mid: String) : MusicContainer
+data class MediaGenre(override val container: YesNo,
+                      override val playable: YesNo,
+                      override val type: MediaType,
+                      override val name: String,
+                      @JsonDeserialize(converter = Str2URLConverter::class)
+                      override val imageUrl: URL?,
+                      val cid: String,
+                      override val mid: String) : MediaBase
 
-data class MusicContainerContainer(override val container: YesNo,
-                                   override val playable: YesNo,
-                                   override val type: MediaType,
-                                   override val name: String,
-                                   @JsonDeserialize(converter = Str2URLConverter::class)
-                                   override val imageUrl: URL?,
-                                   val cid: String,
-                                   override val mid: String) : MusicContainer
+data class MediaContainer(override val container: YesNo,
+                          override val playable: YesNo,
+                          override val type: MediaType,
+                          override val name: String,
+                          @JsonDeserialize(converter = Str2URLConverter::class)
+                          override val imageUrl: URL?,
+                          val cid: String,
+                          override val mid: String) : MediaBase
 
-data class MusicContainerStation(override val container: YesNo,
-                                 override val playable: YesNo,
-                                 override val type: MediaType,
-                                 override val name: String,
-                                 @JsonDeserialize(converter = Str2URLConverter::class)
-                                 override val imageUrl: URL?,
-                                 override val mid: String) : MusicContainer
+data class MediaStation(override val container: YesNo,
+                        override val playable: YesNo,
+                        override val type: MediaType,
+                        override val name: String,
+                        @JsonDeserialize(converter = Str2URLConverter::class)
+                        override val imageUrl: URL?,
+                        override val mid: String) : MediaBase
 
 data class SearchCriteria(val name: String, val scid: String, val wildcard: YesNo)
 
@@ -498,10 +498,10 @@ data class BrowseMediaSourcesResponse(@JsonProperty("heos") override val status:
                                       val options: Options = emptyList()) : GenericResponse
 
 data class BrowseTopMusicResponse(@JsonProperty("heos") override val status: Status,
-                                  val payload: List<MusicContainer>) : GenericResponse
+                                  val payload: List<MediaBase>) : GenericResponse
 
 data class BrowseSourceContainersResponse(@JsonProperty("heos") override val status: Status,
-                                          val payload: List<MusicContainer>,
+                                          val payload: List<MediaBase>,
                                           val options: Options = emptyList()) : GenericResponse
 
 data class GetSearchCriteriaResponse(@JsonProperty("heos") override val status: Status,
