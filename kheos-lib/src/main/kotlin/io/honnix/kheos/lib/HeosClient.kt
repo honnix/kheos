@@ -109,6 +109,8 @@ interface HeosClient : Closeable {
   fun browseMusicSources(sid: String, range: IntRange = IntRange.EMPTY): BrowseMediaSourcesResponse
 
   fun browseTopMusic(sid: String, range: IntRange = IntRange.EMPTY): BrowseTopMusicResponse
+
+  fun browseSourceContainers(sid: String, cid: String, range: IntRange = IntRange.EMPTY): BrowseSourceContainersResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -421,6 +423,20 @@ internal class HeosClientImpl(host: String,
     return sendCommand(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
         AttributesBuilder()
             .add("sid", sid)
+            .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
+            .build())
+  }
+
+  override fun browseSourceContainers(sid: String, cid: String, range: IntRange)
+      : BrowseSourceContainersResponse {
+    if (range.start < 0) {
+      throw IllegalArgumentException("range starts from 0, $range given")
+    }
+
+    return sendCommand(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+        AttributesBuilder()
+            .add("sid", sid)
+            .add("cid", cid)
             .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
             .build())
   }
