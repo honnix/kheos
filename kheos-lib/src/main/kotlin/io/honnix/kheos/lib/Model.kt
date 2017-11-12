@@ -419,7 +419,7 @@ data class MediaStation(override val container: YesNo,
                         override val imageUrl: URL?,
                         override val mid: String) : Media
 
-data class SearchCriteria(val name: String, val scid: String, val wildcard: YesNo)
+data class SearchCriteria(val name: String, val scid: Int, val wildcard: YesNo)
 
 interface GenericResponse {
   val status: Status

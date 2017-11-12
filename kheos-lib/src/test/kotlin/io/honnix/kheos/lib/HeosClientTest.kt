@@ -1123,8 +1123,8 @@ class HeosClientImplTest : StringSpec() {
               .add("sid", "0")
               .build()),
           listOf(
-              SearchCriteria("foo", "0", YES),
-              SearchCriteria("bar", "1", NO)))
+              SearchCriteria("foo", 0, YES),
+              SearchCriteria("bar", 1, NO)))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1141,7 +1141,7 @@ class HeosClientImplTest : StringSpec() {
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("search", "*")
-              .add("scid", "0")
+              .add("scid", 0)
               .add("returned", 6)
               .add("count", 6)
               .build()),
@@ -1161,7 +1161,7 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.search("0", "*", "0", IntRange(0, 10))
+      val actualResponse = heosClient.search("0", "*", 0, IntRange(0, 10))
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1174,7 +1174,7 @@ class HeosClientImplTest : StringSpec() {
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("search", "*")
-              .add("scid", "0")
+              .add("scid", 0)
               .add("returned", 6)
               .add("count", 6)
               .build()),
@@ -1194,7 +1194,7 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.search("0", "*", "0")
+      val actualResponse = heosClient.search("0", "*", 0)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1203,7 +1203,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should throw if range start < 0 when searching" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.search("0", "*", "0", IntRange(-1, 10))
+        heosClient.search("0", "*", 0, IntRange(-1, 10))
       }
     }
 
