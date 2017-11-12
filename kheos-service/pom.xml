@@ -22,10 +22,6 @@
       <artifactId>kheos-lib</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>apollo-http-service</artifactId>
     </dependency>

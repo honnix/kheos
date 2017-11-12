@@ -26,19 +26,28 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.PrintWriter
 import java.net.Socket
+import java.net.SocketException
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 const val HEOS_PORT = 1255
 const val COMMAND_DELIMITER = "\r\n"
+
+internal fun mkCommand(command: GroupedCommand, attributes: Attributes): String {
+  val attributeStr = if (attributes.isNotEmpty()) "?$attributes" else ""
+  return "heos://${command.group.group}/${command.command}$attributeStr"
+}
 
 interface HeosClient : Closeable {
   companion object {
     fun newInstance(host: String): HeosClient = HeosClientImpl(host)
   }
 
-  fun reconnect()
+  fun reconnect(force: Boolean = false)
 
   fun startHeartbeat(initialDelay: Long = 0, interval: Long = 30, unit: TimeUnit = TimeUnit.SECONDS)
 
@@ -146,14 +155,17 @@ internal class HeosClientImpl(host: String,
     private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
   }
 
+  private var inErrorState = false
+
   private lateinit var clientSocket: Socket
 
   @Synchronized
-  override fun reconnect() {
-    if (!clientSocket().isClosed) {
+  override fun reconnect(force: Boolean) {
+    if (inErrorState || force) {
       clientSocket().close()
+      clientSocket = socketFactory()
+      inErrorState = false
     }
-    clientSocket = socketFactory()
   }
 
   @Synchronized
@@ -171,14 +183,21 @@ internal class HeosClientImpl(host: String,
         val output = PrintWriter(clientSocket().getOutputStream(), true)
         val input = BufferedReader(InputStreamReader(clientSocket().getInputStream()))
 
-        output.printf("${mkCommand(command, attributes)}$COMMAND_DELIMITER")
+        val commandToSend = mkCommand(command, attributes)
+
+        logger.debug("sending command $commandToSend")
+
+        output.printf("$commandToSend$COMMAND_DELIMITER")
         input.readLine()
       } catch (e: IOException) {
+        inErrorState = true
         val message = "failed to communicate with ${clientSocket().inetAddress}"
         logger.error(message)
         throw HeosClientException(message, e)
       }
     }
+
+    inErrorState = false
 
     logger.debug(rawResponse)
 
@@ -189,11 +208,6 @@ internal class HeosClientImpl(host: String,
     }
 
     return response
-  }
-
-  private fun mkCommand(command: GroupedCommand, attributes: Attributes): String {
-    val attributeStr = if (attributes.isNotEmpty()) "?$attributes" else ""
-    return "heos://${command.group.group}/${command.command}$attributeStr"
   }
 
   override fun startHeartbeat(initialDelay: Long, interval: Long, unit: TimeUnit) {
@@ -559,5 +573,120 @@ internal class HeosClientImpl(host: String,
             .add("range", { !range.isEmpty() }, { "${range.start},${range.endInclusive}" })
             .build())
   }
+}
 
+interface ChangeEventListener {
+  fun onEvent(event: ChangeEvent)
+
+  fun onException(exception: IOException) {
+
+  }
+}
+
+interface HeosChangeEventsClient : Closeable {
+  companion object {
+    fun newInstance(host: String): HeosChangeEventsClient = HeosChangeEventsClientImpl(host)
+  }
+
+  fun start()
+
+  fun register(listener: ChangeEventListener): Int
+
+  fun unregister(id: Int)
+}
+
+internal class HeosChangeEventsClientImpl(host: String,
+                                          private val socketFactory: () -> Socket = { Socket(host, HEOS_PORT) },
+                                          private val socketExecutorService: ExecutorService
+                                          = Executors.newSingleThreadExecutor(),
+                                          private val listenerExecutorService: ExecutorService
+                                          = Executors.newFixedThreadPool(4))
+  : HeosChangeEventsClient {
+  companion object {
+    private val logger = LoggerFactory.getLogger(HeosChangeEventsClientImpl::class.java)
+  }
+
+  private val id = AtomicInteger()
+
+  private lateinit var clientSocket: Socket
+
+  private val listeners = ConcurrentHashMap<Int, ChangeEventListener>()
+
+  private fun registerForChangeEvents() {
+    logger.info("register for change events")
+
+    val output = PrintWriter(clientSocket.getOutputStream(), true)
+    val input = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
+
+    output.printf("${mkCommand(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
+        AttributesBuilder()
+            .add("enable", "on")
+            .build())}$COMMAND_DELIMITER")
+
+    val rawResponse = input.readLine()
+
+    logger.debug(rawResponse)
+
+    val response = JSON.mapper.readValue(rawResponse, RegisterForChangeEventsResponse::class.java)
+
+    if (response.status.result === Result.FAIL) {
+      throw HeosCommandException.build(response.status.message)
+    }
+  }
+
+  override fun start() {
+    clientSocket = socketFactory()
+
+    registerForChangeEvents()
+
+    socketExecutorService.execute {
+      while (true) {
+        val rawResponse = try {
+          val input = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
+          input.readLine()
+        } catch (e: IOException) {
+          if (e is SocketException && "Socket closed" == e.message) {
+            break
+          } else {
+            val message = "failed to communicate with ${clientSocket.inetAddress}"
+            logger.error(message)
+            listeners.values.forEach {
+              listenerExecutorService.execute {
+                println("calling")
+                it.onException(e)
+              }
+            }
+            continue
+          }
+        }
+
+        logger.debug(rawResponse)
+
+        val changeEvent = JSON.mapper.readValue(rawResponse, ChangeEventResponse::class.java).event
+
+        listeners.values.forEach {
+          listenerExecutorService.execute {
+            it.onEvent(changeEvent)
+          }
+        }
+      }
+    }
+  }
+
+  override fun register(listener: ChangeEventListener): Int {
+    val newId = id.getAndIncrement()
+    listeners[newId] = listener
+    return newId
+  }
+
+  override fun unregister(id: Int) {
+    listeners - id
+  }
+
+  override fun close() {
+    logger.info("closing connection to heos")
+    clientSocket.close()
+    socketExecutorService.shutdownNow()
+    listenerExecutorService.shutdown()
+  }
 }

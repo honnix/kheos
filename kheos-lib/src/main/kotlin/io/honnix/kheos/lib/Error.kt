@@ -21,7 +21,7 @@ data class HeosCommandException(val eid: ErrorId, val text: String) :
     Exception("eid: $eid, text: $text") {
   companion object {
     fun build(message: Message) =
-        HeosCommandException(ErrorId.from(message.value("eid")?.toInt()),
+        HeosCommandException(ErrorId.from(message.intValue("eid")),
             message.value("text") ?: "no error message")
   }
 }

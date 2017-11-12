@@ -33,23 +33,28 @@ import org.jmock.lib.concurrent.DeterministicScheduler
 import org.mockito.Mockito.*
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.net.Socket
 import java.net.SocketException
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
-class HeosClientImplTest : StringSpec() {
-  private class QuietDeterministicScheduler : DeterministicScheduler() {
-    private var isShutdown = false
+private class QuietDeterministicScheduler : DeterministicScheduler() {
+  private var isShutdown = false
 
-    override fun shutdownNow(): MutableList<Runnable> {
-      isShutdown = true
-      return mutableListOf()
-    }
-
-    override fun isShutdown() = isShutdown
+  override fun shutdown() {
+    isShutdown = true
   }
 
+  override fun shutdownNow(): MutableList<Runnable> {
+    isShutdown = true
+    return mutableListOf()
+  }
+
+  override fun isShutdown() = isShutdown
+}
+
+class HeosClientImplTest : StringSpec() {
   private val scheduler = QuietDeterministicScheduler()
   private val socket = mock<Socket>()
   private val heosClient = HeosClientImpl("localhost", { socket }, scheduler)
@@ -70,17 +75,22 @@ class HeosClientImplTest : StringSpec() {
     }
 
     "should reconnect" {
-      `when`(socket.isClosed).thenReturn(false)
+      `when`(socket.getOutputStream()).thenThrow(SocketException())
+
+      shouldThrow<HeosClientException> {
+        heosClient.checkAccount()
+      }
+
       heosClient.reconnect()
-      verify(socket).isClosed
       verify(socket).close()
 
       reset(socket)
 
-      `when`(socket.isClosed).thenReturn(true)
       heosClient.reconnect()
-      verify(socket).isClosed
       verify(socket, never()).close()
+
+      heosClient.reconnect(true)
+      verify(socket).close()
     }
 
     "should close" {
@@ -719,6 +729,12 @@ class HeosClientImplTest : StringSpec() {
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe "heos://group/set_group?pid=0,1,2$COMMAND_DELIMITER"
+    }
+
+    "should throw if no pid" {
+      shouldThrow<IllegalArgumentException> {
+        heosClient.setGroup(emptyList())
+      }
     }
 
     "should get group volume" {
@@ -1428,6 +1444,129 @@ class HeosClientImplTest : StringSpec() {
                 .build(),
             IntRange(0, 10))
       }
+    }
+  }
+}
+
+class HeosChangeEventsClientTest : StringSpec() {
+  private val socketExecutorService = QuietDeterministicScheduler()
+  private val listenerExecutorService = QuietDeterministicScheduler()
+  private val socket = mock<Socket>()
+  private val heosChangeEventsClient = HeosChangeEventsClientImpl("localhost", { socket },
+      socketExecutorService, listenerExecutorService)
+
+  private fun start(): Pair<ByteArrayInputStream, ByteArrayOutputStream> {
+    val expectedResponse = RegisterForChangeEventsResponse(
+        Status(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
+            Result.SUCCESS, Message.Builder()
+            .add("enable", "on")
+            .build()))
+
+    val input = ByteArrayInputStream(JSON.serialize(expectedResponse))
+    `when`(socket.getInputStream()).thenReturn(input)
+
+    val output = ByteArrayOutputStream()
+    `when`(socket.getOutputStream()).thenReturn(output)
+
+    heosChangeEventsClient.start()
+    return Pair(input, output)
+  }
+
+  init {
+    "should create an instance of HeosChangeEventsClientImpl" {
+      HeosChangeEventsClient.newInstance("localhost")::class shouldBe HeosChangeEventsClientImpl::class
+    }
+
+    "should register and unregister listeners" {
+      val listener = mock<ChangeEventListener>()
+      val id0 = heosChangeEventsClient.register(listener)
+      id0 shouldBe 0
+      val id1 = heosChangeEventsClient.register(listener)
+      id1 shouldBe 1
+      heosChangeEventsClient.unregister(id0)
+      heosChangeEventsClient.unregister(id1)
+    }
+
+    "should start and close" {
+      val (input, output) = start()
+
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://system/register_for_change_events?enable=on$COMMAND_DELIMITER"
+
+      heosChangeEventsClient.close()
+
+      verify(socket).close()
+      socketExecutorService.isShutdown shouldBe true
+      listenerExecutorService.isShutdown shouldBe true
+    }
+
+    "should fail to start" {
+      val expectedResponse = RegisterForChangeEventsResponse(
+          Status(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
+              Result.FAIL, Message.Builder()
+              .add("eid", ErrorId.INTERNAL_ERROR.eid)
+              .add("text", "System Internal Error")
+              .build()))
+
+      val input = ByteArrayInputStream(JSON.serialize(expectedResponse))
+      `when`(socket.getInputStream()).thenReturn(input)
+
+      val output = ByteArrayOutputStream()
+      `when`(socket.getOutputStream()).thenReturn(output)
+
+      val exception = shouldThrow<HeosCommandException> {
+        heosChangeEventsClient.start()
+      }
+
+      exception.eid shouldBe ErrorId.INTERNAL_ERROR
+      exception.text shouldBe "System Internal Error"
+    }
+
+    "should call listener for event" {
+      val listener = mock<ChangeEventListener>()
+      heosChangeEventsClient.register(listener)
+
+      start()
+
+      val changeEvent = ChangeEvent(ChangeEventCommand.PLAYER_NOW_PLAYING_PROGRESS,
+          Message.Builder()
+              .add("pid", "0")
+              .add("cur_pos", "0")
+              .add("duration", "0")
+              .build())
+      val changeEventResponse = ChangeEventResponse(changeEvent)
+
+      val input = ByteArrayInputStream(JSON.serialize(changeEventResponse))
+      doReturn(input).doThrow(SocketException("Socket closed")).`when`(socket).getInputStream()
+
+      socketExecutorService.tick(1, TimeUnit.SECONDS)
+      listenerExecutorService.tick(1, TimeUnit.SECONDS)
+
+      verify(listener).onEvent(changeEvent)
+
+      heosChangeEventsClient.close()
+    }
+
+    "should call listener for exception" {
+      val listener = mock<ChangeEventListener>()
+      heosChangeEventsClient.register(listener)
+
+      start()
+
+      val socketException = SocketException()
+      val ioException = IOException()
+      doThrow(socketException)
+          .doThrow(ioException)
+          .doThrow(SocketException("Socket closed")).`when`(socket).getInputStream()
+
+      socketExecutorService.tick(1, TimeUnit.SECONDS)
+      listenerExecutorService.tick(1, TimeUnit.SECONDS)
+
+      verify(listener).onException(socketException)
+      verify(listener).onException(ioException)
+
+      heosChangeEventsClient.close()
     }
   }
 }

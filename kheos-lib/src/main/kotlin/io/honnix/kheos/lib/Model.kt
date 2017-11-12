@@ -34,6 +34,7 @@ data class GroupedCommand(val group: CommandGroup, val command: Command) {
 }
 
 enum class Command(val command: String) {
+  REGISTER_FOR_CHANGE_EVENTS("register_for_change_events"),
   HEART_BEAT("heart_beat"),
   CHECK_ACCOUNT("check_account"),
   SIGN_IN("sign_in"),
@@ -568,3 +569,35 @@ data class GetServiceOptionsResponse(@JsonProperty("heos") override val status: 
                                      val payload: Options) : GenericResponse
 
 data class SetServiceOptionResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class RegisterForChangeEventsResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+enum class ChangeEventCommand(private val command: String) {
+  PLAYER_NOW_PLAYING_PROGRESS("player_now_playing_progress"),
+  PLAYER_NOW_PLAYING_CHANGED("player_now_playing_changed"),
+  PLAYER_STATE_CHANGED("player_state_changed"),
+  PLAYER_QUEUE_CHANGED("player_queue_changed"),
+  PLAYER_VOLUME_CHANGED("player_volume_changed"),
+  PLAYER_MUTE_CHANGED("player_mute_changed"),
+  REPEAT_MODE_CHANGED("repeat_mode_changed"),
+  SHUFFLE_MODE_CHANGED("shuffle_mode_changed"),
+  GROUP_CHANGED("group_changed"),
+  GROUP_VOLUME_CHANGED("group_volume_changed"),
+  GROUP_MUTE_CHANGED("group_mute_changed"),
+  USER_CHANGED("user_changed");
+
+  companion object {
+    @JsonCreator
+    fun from(command: String) = ChangeEventCommand.valueOf(
+        command.split("/").last().toUpperCase())
+  }
+
+  @JsonValue
+  override fun toString() = "event/$command"
+}
+
+data class ChangeEvent(val command: ChangeEventCommand,
+                       @JsonDeserialize(converter = Str2MessageConverter::class)
+                       val message: Message)
+
+data class ChangeEventResponse(@JsonProperty("heos") val event: ChangeEvent)

@@ -105,11 +105,11 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     return Api.prefixRoutes(routes, Api.Version.V0)
   }
 
-  private fun checkAccount() = callAndBuildResponse(heosClient::reconnect) {
+  private fun checkAccount() = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.checkAccount()
   }
 
-  private fun getPlayers() = callAndBuildResponse(heosClient::reconnect) {
+  private fun getPlayers() = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getPlayers()
   }
 }
