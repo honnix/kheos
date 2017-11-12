@@ -323,9 +323,11 @@ data class Message(private val content: Map<String, List<String>>) {
   }
 }
 
+data class Option(val id: Int, val name: String)
+
 typealias Attributes = Message
 typealias AttributesBuilder = Message.Builder
-typealias Options = List<Map<String, List<Map<String, String>>>>
+typealias Options = List<Map<String, List<Option>>>
 
 data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
                   val command: GroupedCommand,

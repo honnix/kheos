@@ -303,7 +303,7 @@ class HeosClientImplTest : StringSpec() {
               URL("http://example.com"), "0", "0", "0", "0",
               "station"),
           listOf(mapOf("play" to
-              listOf(mapOf("id" to "19", "name" to "Add to HEOS Favorites")))))
+              listOf(Option(19, "Add to HEOS Favorites")))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -934,7 +934,7 @@ class HeosClientImplTest : StringSpec() {
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
               MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
           listOf(mapOf("browse" to
-              listOf(mapOf("id" to "13", "name" to "create new station")))))
+              listOf(Option(13, "Create New Station")))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -957,7 +957,7 @@ class HeosClientImplTest : StringSpec() {
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
               MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
           listOf(mapOf("browse" to
-              listOf(mapOf("id" to "13", "name" to "create new station")))))
+              listOf(Option(13, "Create New Station")))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1065,7 +1065,7 @@ class HeosClientImplTest : StringSpec() {
               MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
-              listOf(mapOf("id" to "4", "name" to "Add Playlist to Library")))))
+              listOf(Option(4, "Add Playlist to Library")))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1099,7 +1099,7 @@ class HeosClientImplTest : StringSpec() {
               MediaStation(NO, YES, MediaType.STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
-              listOf(mapOf("id" to "4", "name" to "Add Playlist to Library")))))
+              listOf(Option(4, "Add Playlist to Library")))))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -1298,7 +1298,7 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.addToQueue("0", "0", "0",  
+      val actualResponse = heosClient.addToQueue("0", "0", "0",
           AddCriteriaId.ADD_TO_END, "0")
 
       actualResponse shouldBe expectedResponse
