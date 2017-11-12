@@ -22,6 +22,14 @@ import io.kotlintest.specs.StringSpec
 
 class MessageTest : StringSpec() {
   init {
+    "should get value" {
+      val message = Message.Builder()
+          .add("pid", "0")
+          .build()
+
+      message.value("pid") shouldBe "0"
+    }
+
     "should get enum value" {
       val message = Message.Builder()
           .add("state", MuteState.ON)
@@ -45,9 +53,18 @@ class MessageTest : StringSpec() {
 
       message.typedValue("foo", { it.toInt() }) shouldBe 100
     }
-    
+
     "should be empty" {
       Message().isEmpty() shouldBe true
+    }
+
+    "should get values" {
+      val message = Message.Builder()
+          .add("foo", "0")
+          .add("foo", "1")
+          .build()
+
+      message.values("foo") shouldBe listOf("0", "1")
     }
   }
 }

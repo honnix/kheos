@@ -147,12 +147,6 @@ enum class PlayState(private val state: String) {
   PAUSE("pause"),
   STOP("Stop");
 
-  companion object {
-    @JsonCreator
-    fun from(state: String) = PlayState.valueOf(state.toUpperCase())
-  }
-
-  @JsonValue
   override fun toString() = state
 }
 
@@ -160,12 +154,6 @@ enum class MuteState(private val state: String) {
   ON("on"),
   OFF("off");
 
-  companion object {
-    @JsonCreator
-    fun from(state: String) = MuteState.valueOf(state.toUpperCase())
-  }
-
-  @JsonValue
   override fun toString() = state
 }
 
@@ -173,12 +161,6 @@ enum class PlayRepeatState(private val state: String) {
   ON("on"),
   OFF("off");
 
-  companion object {
-    @JsonCreator
-    fun from(state: String) = PlayRepeatState.valueOf(state.toUpperCase())
-  }
-
-  @JsonValue
   override fun toString() = state
 }
 
@@ -186,12 +168,6 @@ enum class PlayShuffleState(private val state: String) {
   ON("on"),
   OFF("off");
 
-  companion object {
-    @JsonCreator
-    fun from(state: String) = PlayShuffleState.valueOf(state.toUpperCase())
-  }
-
-  @JsonValue
   override fun toString() = state
 }
 
@@ -253,19 +229,21 @@ enum class YesNo(private val value: String) {
   override fun toString() = value
 }
 
-enum class AddCriteriaId(@JsonValue val id: Int) {
+enum class AddCriteriaId(val id: Int) {
   UNKNOWN(0),
   PLAY_NOW(1),
   PLAY_NEXT(2),
   ADD_TO_END(3),
   REPLACE_AND_PLAY(4);
 
-  companion object {
-    @JsonCreator
-    fun from(id: Int) = AddCriteriaId.values().find { x -> x.id == id } ?: UNKNOWN
-  }
-
   override fun toString() = id.toString()
+}
+
+enum class RegisterChangeEvents(private val state: String) {
+  ON("on"),
+  OFF("off");
+
+  override fun toString() = state
 }
 
 data class Message(private val content: Map<String, List<String>>) {
