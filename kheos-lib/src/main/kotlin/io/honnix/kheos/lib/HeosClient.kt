@@ -120,8 +120,10 @@ interface HeosClient : Closeable {
 
   fun playStream(pid: String, sid: String, cid: String, mid: String, name: String): PlayStreamResponse
 
-  fun playInput(pid: String, sid: String = "", mid: String = "", spid: String = "",
-                input: String = ""): PlayInputResponse
+  fun playInput(pid: String, mid: String = "", spid: String = "", input: String = ""): PlayInputResponse
+
+  fun addToQueue(pid: String, sid: String, cid: String,
+                 aid: AddCriteriaId, mid: String = ""): AddToQueueResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -483,14 +485,24 @@ internal class HeosClientImpl(host: String,
               .add("name", name)
               .build())
 
-  override fun playInput(pid: String, sid: String, mid: String, spid: String, input: String)
+  override fun playInput(pid: String, mid: String, spid: String, input: String)
       : PlayInputResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
           AttributesBuilder()
               .add("pid", pid)
-              .add("sid", sid::isNotEmpty, { sid })
               .add("mid", mid::isNotEmpty, { mid })
               .add("spid", spid::isNotEmpty, { spid })
               .add("input", input::isNotEmpty, { input })
+              .build())
+
+  override fun addToQueue(pid: String, sid: String, cid: String, aid: AddCriteriaId, mid: String)
+      : AddToQueueResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("sid", sid::isNotEmpty, { sid })
+              .add("cid", cid)
+              .add("mid", mid::isNotEmpty, { mid })
+              .add("aid", aid.id)
               .build())
 }

@@ -1232,7 +1232,6 @@ class HeosClientImplTest : StringSpec() {
           Status(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
-              .add("sid", "0")
               .add("mid", "0")
               .add("spid", "0")
               .add("input", "inputs/aux_in_1")
@@ -1240,12 +1239,12 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.playInput("0", "0", "0", "0", "inputs/aux_in_1")
+      val actualResponse = heosClient.playInput("0", "0", "0", "inputs/aux_in_1")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
       output.toString() shouldBe
-          "heos://browse/play_input?pid=0&sid=0&mid=0&spid=0&input=inputs/aux_in_1$COMMAND_DELIMITER"
+          "heos://browse/play_input?pid=0&mid=0&spid=0&input=inputs/aux_in_1$COMMAND_DELIMITER"
     }
 
     "should play input from specified input" {
@@ -1264,6 +1263,48 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe
           "heos://browse/play_input?pid=0&input=inputs/aux_in_1$COMMAND_DELIMITER"
+    }
+
+    "should add container to queue" {
+      val expectedResponse = AddToQueueResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("sid", "0")
+              .add("cid", "0")
+              .add("aid", 3)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/add_to_queue?pid=0&sid=0&cid=0&aid=3$COMMAND_DELIMITER"
+    }
+
+    "should add track to queue" {
+      val expectedResponse = AddToQueueResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("sid", "0")
+              .add("cid", "0")
+              .add("mid", 0)
+              .add("aid", 3)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.addToQueue("0", "0", "0",  
+          AddCriteriaId.ADD_TO_END, "0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/add_to_queue?pid=0&sid=0&cid=0&mid=0&aid=3$COMMAND_DELIMITER"
     }
   }
 }

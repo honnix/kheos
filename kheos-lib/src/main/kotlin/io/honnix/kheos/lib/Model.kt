@@ -69,7 +69,8 @@ enum class Command(val command: String) {
   GET_SEARCH_CRITERIA("get_search_criteria"),
   SEARCH("search"),
   PLAY_STREAM("play_stream"),
-  PLAY_INPUT("play_input");
+  PLAY_INPUT("play_input"),
+  ADD_TO_QUEUE("add_to_queue");
 
   companion object {
     @JsonCreator
@@ -247,6 +248,21 @@ enum class YesNo(private val value: String) {
 
   @JsonValue
   override fun toString() = value
+}
+
+enum class AddCriteriaId(@JsonValue val id: Int) {
+  UNKNOWN(0),
+  PLAY_NOW(1),
+  PLAY_NEXT(2),
+  ADD_TO_END(3),
+  REPLACE_AND_PLAY(4);
+
+  companion object {
+    @JsonCreator
+    fun from(id: Int) = AddCriteriaId.values().find { x -> x.id == id } ?: UNKNOWN
+  }
+
+  override fun toString() = id.toString()
 }
 
 data class Message(private val content: Map<String, List<String>>) {
@@ -516,3 +532,5 @@ data class SearchResponse(@JsonProperty("heos") override val status: Status,
 data class PlayStreamResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
 
 data class PlayInputResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+
+data class AddToQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
