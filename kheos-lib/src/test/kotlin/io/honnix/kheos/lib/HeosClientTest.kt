@@ -1226,5 +1226,44 @@ class HeosClientImplTest : StringSpec() {
       input.available() shouldBe 0
       output.toString() shouldBe "heos://browse/play_stream?pid=0&sid=0&cid=0&mid=0&name=foo$COMMAND_DELIMITER"
     }
+
+    "should play input" {
+      val expectedResponse = PlayInputResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("sid", "0")
+              .add("mid", "0")
+              .add("spid", "0")
+              .add("input", "inputs/aux_in_1")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.playInput("0", "0", "0", "0", "inputs/aux_in_1")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/play_input?pid=0&sid=0&mid=0&spid=0&input=inputs/aux_in_1$COMMAND_DELIMITER"
+    }
+
+    "should play input from specified input" {
+      val expectedResponse = PlayInputResponse(
+          Status(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("input", "inputs/aux_in_1")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.playInput("0", input = "inputs/aux_in_1")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe
+          "heos://browse/play_input?pid=0&input=inputs/aux_in_1$COMMAND_DELIMITER"
+    }
   }
 }

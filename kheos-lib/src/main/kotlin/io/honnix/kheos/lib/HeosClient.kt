@@ -119,6 +119,9 @@ interface HeosClient : Closeable {
   fun search(sid: String, search: String, scid: String, range: IntRange = IntRange.EMPTY): SearchResponse
 
   fun playStream(pid: String, sid: String, cid: String, mid: String, name: String): PlayStreamResponse
+
+  fun playInput(pid: String, sid: String = "", mid: String = "", spid: String = "",
+                input: String = ""): PlayInputResponse
 }
 
 internal class HeosClientImpl(host: String,
@@ -478,5 +481,16 @@ internal class HeosClientImpl(host: String,
               .add("cid", cid)
               .add("mid", mid)
               .add("name", name)
+              .build())
+
+  override fun playInput(pid: String, sid: String, mid: String, spid: String, input: String)
+      : PlayInputResponse =
+      sendCommand(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("sid", sid::isNotEmpty, { sid })
+              .add("mid", mid::isNotEmpty, { mid })
+              .add("spid", spid::isNotEmpty, { spid })
+              .add("input", input::isNotEmpty, { input })
               .build())
 }
