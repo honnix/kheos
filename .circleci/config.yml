@@ -15,6 +15,9 @@ jobs:
           paths:
             - ~/.m2
       - run: mvn verify
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker push $(cat kheos-service/target/docker/image-name)
       - run: bash <(curl -s https://codecov.io/bash) -f '!**/jacoco-aggregate/**'
       - run: |
           mkdir test-reports
