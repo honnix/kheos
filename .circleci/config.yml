@@ -34,7 +34,8 @@ jobs:
             mv /tmp/docker/* /usr/bin
       - run: |
           docker login -u $DOCKER_USER -p $DOCKER_PASS
-          docker push $(cat kheos-service/target/docker/image-name)
-          LATEST=${$(cat kheos-service/target/docker/image-name)%%:*}:latest
-          docker tag $(cat kheos-service/target/docker/image-name) $LATEST
-          docker push $LATEST
+          IMAGE_NAME=$(cat kheos-service/target/docker/image-name)
+          docker push $IMAGE_NAME
+          LATEST_IMAGE_NAME=${IMAGE_NAME%:*}:latest
+          docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
+          docker push $LATEST_IMAGE_NAME
