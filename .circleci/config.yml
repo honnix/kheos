@@ -15,9 +15,6 @@ jobs:
           paths:
             - ~/.m2
       - run: mvn verify
-      - run: |
-          docker login -u $DOCKER_USER -p $DOCKER_PASS
-          docker push $(cat kheos-service/target/docker/image-name)
       - run: bash <(curl -s https://codecov.io/bash) -f '!**/jacoco-aggregate/**'
       - run: |
           mkdir test-reports
@@ -27,3 +24,14 @@ jobs:
       - store_artifacts:
           path: kheos-report/target/site/jacoco-aggregate/
           destination: jacoco-aggregate
+      - run:
+          name: Install Docker client
+          command: |
+            set -x
+            VER="17.03.0-ce"
+            curl -L -o /tmp/docker-$VER.tgz https://get.docker.com/builds/Linux/x86_64/docker-$VER.tgz
+            tar -xz -C /tmp -f /tmp/docker-$VER.tgz
+            mv /tmp/docker/* /usr/bin
+      - run: |
+          docker login -u $DOCKER_USER -p $DOCKER_PASS
+          docker push $(cat kheos-service/target/docker/image-name)
