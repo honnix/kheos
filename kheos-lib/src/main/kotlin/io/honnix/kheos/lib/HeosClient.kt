@@ -652,7 +652,6 @@ internal class HeosChangeEventsClientImpl(host: String,
             logger.error(message)
             listeners.values.forEach {
               listenerExecutorService.execute {
-                println("calling")
                 it.onException(e)
               }
             }
