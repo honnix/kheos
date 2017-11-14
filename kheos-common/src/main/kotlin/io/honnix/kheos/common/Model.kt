@@ -17,11 +17,7 @@
  */
 package io.honnix.kheos.common
 
-import com.fasterxml.jackson.annotation.JsonCreator
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.JsonValue
+import com.fasterxml.jackson.annotation.*
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import io.honnix.kheos.common.JSON.Str2GroupedCommandConverter
 import io.honnix.kheos.common.JSON.Str2MessageConverter

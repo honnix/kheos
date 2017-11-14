@@ -19,8 +19,7 @@ package io.honnix.kheos.service
 
 import com.google.common.io.Closer
 import com.spotify.apollo.Environment
-import com.spotify.apollo.route.AsyncHandler
-import com.spotify.apollo.route.Route
+import com.spotify.apollo.route.*
 import com.typesafe.config.Config
 import io.honnix.kheos.lib.HeosClient
 import io.kotlintest.matchers.shouldBe

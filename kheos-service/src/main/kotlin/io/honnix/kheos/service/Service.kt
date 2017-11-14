@@ -17,8 +17,7 @@
  */
 package io.honnix.kheos.service
 
-import com.spotify.apollo.AppInit
-import com.spotify.apollo.Environment
+import com.spotify.apollo.*
 import com.spotify.apollo.httpservice.HttpService
 import com.spotify.apollo.route.Route
 import io.honnix.kheos.lib.HeosClient

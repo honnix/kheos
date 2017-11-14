@@ -17,41 +17,21 @@
  */
 package io.honnix.kheos.service
 
-import com.spotify.apollo.Environment
-import com.spotify.apollo.Response
-import com.spotify.apollo.StatusType
+import com.spotify.apollo.*
 import com.spotify.apollo.test.ServiceHelper
 import com.spotify.apollo.test.unit.ResponseMatchers.hasStatus
 import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
-import io.honnix.kheos.common.CheckAccountResponse
-import io.honnix.kheos.common.Command
-import io.honnix.kheos.common.CommandGroup
-import io.honnix.kheos.common.Control
-import io.honnix.kheos.common.GetPlayersResponse
-import io.honnix.kheos.common.GroupedCommand
-import io.honnix.kheos.common.JSON
-import io.honnix.kheos.common.Lineout
-import io.honnix.kheos.common.Message
-import io.honnix.kheos.common.Player
-import io.honnix.kheos.common.Result
+import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Status
-import io.honnix.kheos.lib.ErrorId
-import io.honnix.kheos.lib.HeosClient
-import io.honnix.kheos.lib.HeosClientException
-import io.honnix.kheos.lib.HeosCommandException
+import io.honnix.kheos.lib.*
 import io.kotlintest.matchers.shouldBe
-import io.kotlintest.mock.`when`
-import io.kotlintest.mock.mock
-import io.kotlintest.properties.forAll
-import io.kotlintest.properties.headers
-import io.kotlintest.properties.row
-import io.kotlintest.properties.table
+import io.kotlintest.mock.*
+import io.kotlintest.properties.*
 import io.kotlintest.specs.StringSpec
 import okio.ByteString
 import org.hamcrest.MatcherAssert.assertThat
 import org.mockito.Mockito.verify
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.*
 
 class ApiTest : StringSpec() {
   init {

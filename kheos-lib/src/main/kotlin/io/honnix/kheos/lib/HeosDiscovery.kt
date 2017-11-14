@@ -22,9 +22,7 @@ import org.fourthline.cling.UpnpServiceImpl
 import org.fourthline.cling.model.message.header.DeviceTypeHeader
 import org.fourthline.cling.model.meta.RemoteDevice
 import org.fourthline.cling.model.types.DeviceType
-import org.fourthline.cling.registry.DefaultRegistryListener
-import org.fourthline.cling.registry.Registry
-import org.fourthline.cling.registry.RegistryListener
+import org.fourthline.cling.registry.*
 
 object HeosDiscovery {
   class MyRegistryListener(private val deviceType: DeviceType) : DefaultRegistryListener() {
