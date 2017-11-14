@@ -110,6 +110,7 @@
         <configuration>
           <repository>docker.io/honnix/${project.artifactId}</repository>
           <tag>${project.version}-${buildTimestamp}-${buildNumber}</tag>
+          <useMavenSettingsForAuth>true</useMavenSettingsForAuth>
         </configuration>
       </plugin>
     </plugins>
