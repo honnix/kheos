@@ -49,6 +49,7 @@
   </scm>
 
   <modules>
+    <module>kheos-common</module>
     <module>kheos-lib</module>
     <module>kheos-service</module>
     <module>kheos-client</module>
@@ -67,6 +68,11 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>kheos-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>${project.groupId}</groupId>
         <artifactId>kheos-lib</artifactId>

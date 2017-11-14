@@ -17,6 +17,8 @@
  */
 package io.honnix.kheos.lib
 
+import io.honnix.kheos.common.ChangeEvent
+
 fun main(args: Array<String>) {
   val client = HeosChangeEventsClient.newInstance("heos")
 

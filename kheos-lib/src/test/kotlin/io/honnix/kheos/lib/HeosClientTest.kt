@@ -17,13 +17,92 @@
  */
 package io.honnix.kheos.lib
 
-import io.honnix.kheos.lib.Command.*
-import io.honnix.kheos.lib.CommandGroup.*
-import io.honnix.kheos.lib.Control.NETWORK
-import io.honnix.kheos.lib.MediaType.STATION
-import io.honnix.kheos.lib.MusicSourceType.*
-import io.honnix.kheos.lib.PlayState.PLAY
-import io.honnix.kheos.lib.YesNo.*
+import io.honnix.kheos.common.AddCriteriaId
+import io.honnix.kheos.common.AddToQueueResponse
+import io.honnix.kheos.common.AttributesBuilder
+import io.honnix.kheos.common.BrowseMediaSourcesResponse
+import io.honnix.kheos.common.BrowseSourceContainersResponse
+import io.honnix.kheos.common.BrowseTopMusicResponse
+import io.honnix.kheos.common.ChangeEvent
+import io.honnix.kheos.common.ChangeEventCommand
+import io.honnix.kheos.common.ChangeEventResponse
+import io.honnix.kheos.common.CheckAccountResponse
+import io.honnix.kheos.common.ClearQueueResponse
+import io.honnix.kheos.common.Command
+import io.honnix.kheos.common.Command.*
+import io.honnix.kheos.common.CommandGroup
+import io.honnix.kheos.common.CommandGroup.*
+import io.honnix.kheos.common.Control.NETWORK
+import io.honnix.kheos.common.DeletePlaylistResponse
+import io.honnix.kheos.common.GenericResponse
+import io.honnix.kheos.common.GetGroupInfoResponse
+import io.honnix.kheos.common.GetGroupsResponse
+import io.honnix.kheos.common.GetMusicSourceInfoResponse
+import io.honnix.kheos.common.GetMusicSourcesResponse
+import io.honnix.kheos.common.GetMuteResponse
+import io.honnix.kheos.common.GetNowPlayingMediaResponse
+import io.honnix.kheos.common.GetPlayModeResponse
+import io.honnix.kheos.common.GetPlayStateResponse
+import io.honnix.kheos.common.GetPlayerInfoResponse
+import io.honnix.kheos.common.GetPlayersResponse
+import io.honnix.kheos.common.GetQueueResponse
+import io.honnix.kheos.common.GetSearchCriteriaResponse
+import io.honnix.kheos.common.GetServiceOptionsResponse
+import io.honnix.kheos.common.GetVolumeResponse
+import io.honnix.kheos.common.Group
+import io.honnix.kheos.common.GroupedCommand
+import io.honnix.kheos.common.GroupedPlayer
+import io.honnix.kheos.common.HeartbeatResponse
+import io.honnix.kheos.common.Image
+import io.honnix.kheos.common.JSON
+import io.honnix.kheos.common.Lineout
+import io.honnix.kheos.common.MediaAlbum
+import io.honnix.kheos.common.MediaArtist
+import io.honnix.kheos.common.MediaContainer
+import io.honnix.kheos.common.MediaGenre
+import io.honnix.kheos.common.MediaSong
+import io.honnix.kheos.common.MediaStation
+import io.honnix.kheos.common.MediaType
+import io.honnix.kheos.common.MediaType.STATION
+import io.honnix.kheos.common.Message
+import io.honnix.kheos.common.MusicSource
+import io.honnix.kheos.common.MusicSourceType.*
+import io.honnix.kheos.common.MuteState
+import io.honnix.kheos.common.NowPlayingMedia
+import io.honnix.kheos.common.Option
+import io.honnix.kheos.common.PlayInputResponse
+import io.honnix.kheos.common.PlayNextResponse
+import io.honnix.kheos.common.PlayPreviousResponse
+import io.honnix.kheos.common.PlayQueueResponse
+import io.honnix.kheos.common.PlayRepeatState
+import io.honnix.kheos.common.PlayShuffleState
+import io.honnix.kheos.common.PlayState.PLAY
+import io.honnix.kheos.common.PlayStreamResponse
+import io.honnix.kheos.common.Player
+import io.honnix.kheos.common.QueueItem
+import io.honnix.kheos.common.RebootResponse
+import io.honnix.kheos.common.RegisterForChangeEventsResponse
+import io.honnix.kheos.common.RemoveFromQueueResponse
+import io.honnix.kheos.common.RenamePlaylistResponse
+import io.honnix.kheos.common.Result
+import io.honnix.kheos.common.RetrieveMetadataResponse
+import io.honnix.kheos.common.Role
+import io.honnix.kheos.common.SaveQueueResponse
+import io.honnix.kheos.common.SearchCriteria
+import io.honnix.kheos.common.SearchResponse
+import io.honnix.kheos.common.SetGroupResponse
+import io.honnix.kheos.common.SetMuteResponse
+import io.honnix.kheos.common.SetPlayModeResponse
+import io.honnix.kheos.common.SetPlayStateResponse
+import io.honnix.kheos.common.SetServiceOptionResponse
+import io.honnix.kheos.common.SetVolumeResponse
+import io.honnix.kheos.common.SignInResponse
+import io.honnix.kheos.common.SignOutResponse
+import io.honnix.kheos.common.Status
+import io.honnix.kheos.common.ToggleMuteResponse
+import io.honnix.kheos.common.VolumeDownResponse
+import io.honnix.kheos.common.VolumeUpResponse
+import io.honnix.kheos.common.YesNo.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.matchers.shouldThrow
 import io.kotlintest.mock.`when`
@@ -1172,7 +1251,7 @@ class HeosClientImplTest : StringSpec() {
                   URL("http://example.com"), "0", "3"),
               MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -1369,7 +1448,7 @@ class HeosClientImplTest : StringSpec() {
               .add("returned", 2)
               .add("count", 2)
               .build()),
-          listOf(Metadata("0", listOf(
+          listOf(io.honnix.kheos.common.Metadata("0", listOf(
               Image(URL("http://example.com"), 10.0),
               Image(URL("http://example.com"), 12.0)))))
 

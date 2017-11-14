@@ -17,6 +17,8 @@
  */
 package io.honnix.kheos.lib
 
+import io.honnix.kheos.common.Message
+
 data class HeosCommandException(val eid: ErrorId, val text: String) :
     Exception("eid: $eid, text: $text") {
   companion object {

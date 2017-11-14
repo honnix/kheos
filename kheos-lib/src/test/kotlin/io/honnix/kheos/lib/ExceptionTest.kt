@@ -17,6 +17,7 @@
  */
 package io.honnix.kheos.lib
 
+import io.honnix.kheos.common.Message
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.properties.forAll
 import io.kotlintest.specs.StringSpec

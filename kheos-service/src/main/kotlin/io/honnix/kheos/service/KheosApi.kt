@@ -26,14 +26,13 @@ import com.spotify.apollo.route.AsyncHandler
 import com.spotify.apollo.route.Middleware
 import com.spotify.apollo.route.Route
 import com.spotify.apollo.route.SyncHandler
-import io.honnix.kheos.lib.CheckAccountResponse
-
+import io.honnix.kheos.common.CheckAccountResponse
+import io.honnix.kheos.common.GetPlayersResponse
+import io.honnix.kheos.common.JSON
 import io.honnix.kheos.lib.ErrorId.*
-import io.honnix.kheos.lib.GetPlayersResponse
 import io.honnix.kheos.lib.HeosClient
 import io.honnix.kheos.lib.HeosClientException
 import io.honnix.kheos.lib.HeosCommandException
-import io.honnix.kheos.lib.JSON
 import okio.ByteString
 import org.slf4j.LoggerFactory
 

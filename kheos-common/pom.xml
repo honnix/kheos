@@ -11,17 +11,21 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
 
-  <artifactId>kheos-lib</artifactId>
+  <artifactId>kheos-common</artifactId>
   <packaging>jar</packaging>
 
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>kheos-common</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.fourthline.cling</groupId>
       <artifactId>cling-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.module</groupId>
+      <artifactId>jackson-module-kotlin</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.jmock</groupId>

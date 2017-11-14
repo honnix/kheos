@@ -15,7 +15,7 @@
  * limitations under the License.
  * -/-/-
  */
-package io.honnix.kheos.lib
+package io.honnix.kheos.common
 
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.specs.StringSpec

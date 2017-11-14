@@ -15,7 +15,7 @@
  * limitations under the License.
  * -/-/-
  */
-package io.honnix.kheos.lib
+package io.honnix.kheos.common
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategy.SNAKE_CASE
