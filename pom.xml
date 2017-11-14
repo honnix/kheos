@@ -1,6 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <name>kheos</name>
@@ -12,7 +10,7 @@
   <groupId>io.honnix</groupId>
   <artifactId>kheos</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.1</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,7 +43,7 @@
     <url>https://github.com/honnix/kheos</url>
     <connection>scm:git:git@github.com:honnix/kheos.git</connection>
     <developerConnection>scm:git:git@github.com:honnix/kheos.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>v0.0.1</tag>
   </scm>
 
   <modules>
@@ -281,7 +279,7 @@
               <id>enforce</id>
               <configuration>
                 <rules>
-                  <requireUpperBoundDeps/>
+                  <requireUpperBoundDeps />
                 </rules>
               </configuration>
               <goals>
