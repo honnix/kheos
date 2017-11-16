@@ -17,7 +17,7 @@
  */
 package io.honnix.kheos.lib
 
-import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.*
 import io.kotlintest.mock.*
 import io.kotlintest.specs.StringSpec
 import org.fourthline.cling.UpnpService
@@ -39,6 +39,17 @@ class HeosRegistryListenerTest : StringSpec() {
       registryListener.remoteDeviceAdded(mock<Registry>(), device)
 
       list shouldBe listOf(device)
+    }
+
+    "should not invoke callback" {
+      val device = mock<RemoteDevice>()
+      `when`(device.type).thenReturn(null)
+      val list = mutableListOf<RemoteDevice>()
+
+      val registryListener = HeosDiscovery.HeosRegistryListener({ list.add(it) })
+      registryListener.remoteDeviceAdded(mock<Registry>(), device)
+
+      list shouldNotBe listOf(device)
     }
   }
 }
