@@ -1567,3 +1567,24 @@ class HeosChangeEventsClientTest : StringSpec() {
     }
   }
 }
+
+fun main(args: Array<String>) {
+  val client = HeosChangeEventsClient.newInstance("heos")
+
+  client.register(object : ChangeEventListener {
+    override fun onEvent(event: ChangeEvent) {
+      println(event)
+    }
+  })
+  client.register(object : ChangeEventListener {
+    override fun onEvent(event: ChangeEvent) {
+      System.err.println(event)
+    }
+  })
+  client.start()
+
+
+  Thread.sleep(1000 * 10)
+
+  client.close()
+}

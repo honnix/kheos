@@ -18,37 +18,41 @@
 
 package io.honnix.kheos.lib
 
-import org.fourthline.cling.UpnpServiceImpl
+import org.fourthline.cling.*
 import org.fourthline.cling.model.message.header.DeviceTypeHeader
 import org.fourthline.cling.model.meta.RemoteDevice
 import org.fourthline.cling.model.types.DeviceType
 import org.fourthline.cling.registry.*
+import org.slf4j.LoggerFactory
+import java.io.Closeable
 
-object HeosDiscovery {
-  class MyRegistryListener(private val deviceType: DeviceType) : DefaultRegistryListener() {
+class HeosDiscovery(private val callback: (RemoteDevice) -> Unit,
+                    private val upnpService: UpnpService = UpnpServiceImpl()) : Closeable {
+  internal class HeosRegistryListener(private val callback: (RemoteDevice) -> Unit)
+    : DefaultRegistryListener() {
     override fun remoteDeviceAdded(registry: Registry, device: RemoteDevice) {
       if (device.type == deviceType) {
-        println(device.displayString)
+        logger.debug("HOES device discovered${device.displayString}")
+        callback(device)
       }
     }
   }
 
-  val deviceType = DeviceType("schemas-denon-com", "ACT-Denon", 1)
+  companion object {
+    private val logger = LoggerFactory.getLogger(HeosDiscovery::class.java)
 
-  fun search(listener: RegistryListener) {
-    val serverThread = Thread {
-      val upnpService = UpnpServiceImpl()
-      Runtime.getRuntime().addShutdownHook(object : Thread() {
-        override fun run() {
-          upnpService.shutdown()
-        }
-      })
+    internal val deviceType = DeviceType("schemas-denon-com", "ACT-Denon", 1)
+  }
 
-      upnpService.controlPoint.registry.addListener(listener)
-      upnpService.controlPoint.search(DeviceTypeHeader(deviceType))
-    }
+  fun discover() {
+    logger.info("registering device listener")
+    upnpService.controlPoint.registry.addListener(HeosRegistryListener(callback))
+    logger.info("searching device type $deviceType")
+    upnpService.controlPoint.search(DeviceTypeHeader(deviceType))
+  }
 
-    serverThread.isDaemon = false
-    serverThread.start()
+  override fun close() {
+    logger.info("shutting down UPnP service")
+    upnpService.shutdown()
   }
 }
