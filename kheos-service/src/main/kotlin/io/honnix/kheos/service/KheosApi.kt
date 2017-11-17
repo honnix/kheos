@@ -61,9 +61,14 @@ object Api {
 
 internal val logger = LoggerFactory.getLogger(object {}::class.java.`package`.name)
 
-internal fun <T> callAndBuildResponse(h: () -> Unit = {}, retries: Int = 3, f: () -> T): Response<T> = try {
+internal fun <T> callAndBuildResponse(h: () -> Unit = {}, retries: Int = 3, f: () -> T)
+    : Response<T> = try {
   Response.forPayload(f())
+} catch (e: IllegalArgumentException) {
+  logger.debug("bad request", e)
+  Response.forStatus(Status.BAD_REQUEST.withReasonPhrase(e.message))
 } catch (e: HeosCommandException) {
+  logger.info("failed to execute command", e)
   Response.forStatus(eid2Status.getOrDefault(e.eid, INTERNAL_SERVER_ERROR).withReasonPhrase(e.message))
 } catch (e: HeosClientException) {
   if (retries == 0) {
@@ -87,6 +92,14 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
             "GET", base + "/account",
             SyncHandler { checkAccount() }),
         Route.with(
+            em.serializerResponse(SignInResponse::class.java),
+            "POST", base + "/account/sign_in",
+            SyncHandler { rc -> signIn(rc) }),
+        Route.with(
+            em.serializerResponse(SignOutResponse::class.java),
+            "POST", base + "/account/sign_out",
+            SyncHandler { signOut() }),
+        Route.with(
             em.serializerResponse(GetPlayersResponse::class.java),
             "GET", base + "/players",
             SyncHandler { getPlayers() })
@@ -98,6 +111,21 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
 
   private fun checkAccount() = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.checkAccount()
+  }
+
+  private fun signIn(rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
+    val userName = rc.request().parameter("user_name").orElse(null)
+    val password = rc.request().parameter("password").orElse(null)
+
+    if (userName.isNullOrBlank() || password.isNullOrBlank()) {
+      throw IllegalArgumentException("empty userName or password")
+    }
+
+    heosClient.signIn(userName, password)
+  }
+
+  private fun signOut() = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.signOut()
   }
 
   private fun getPlayers() = callAndBuildResponse({ heosClient.reconnect() }) {

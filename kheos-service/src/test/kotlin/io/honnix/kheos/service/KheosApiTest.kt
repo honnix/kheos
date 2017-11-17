@@ -117,6 +117,61 @@ class HeosSystemCommandResourceTest : StringSpec() {
       }
     }
 
+    "should sign in" {
+      forAll(allVersions()) { version ->
+        val payload = SignInResponse(
+            Status(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_IN),
+                Result.SUCCESS, Message.Builder()
+                .add("signed_in")
+                .add("un", "user@example.com")
+                .build()))
+        `when`(heosClient.signIn("foo", "bar")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/account/sign_in?user_name=foo&password=bar")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SignInResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if no user_name" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/account/sign_in?password=bar")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if no password" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/account/sign_in?user_name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should sign out" {
+      forAll(allVersions()) { version ->
+        val payload = SignOutResponse(
+            Status(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_OUT),
+                Result.SUCCESS, Message.Builder()
+                .add("signed_out")
+                .build()))
+        `when`(heosClient.signOut()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/account/sign_out")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SignOutResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
     "should get players" {
       forAll(allVersions()) { version ->
         val payload = GetPlayersResponse(
