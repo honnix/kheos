@@ -24,8 +24,10 @@ import com.spotify.apollo.route.*
 import io.honnix.kheos.common.*
 import io.honnix.kheos.lib.*
 import io.honnix.kheos.lib.ErrorId.*
+import javaslang.control.Try
 import okio.ByteString
 import org.slf4j.LoggerFactory
+import java.util.function.Supplier
 
 typealias KRoute = Route<out AsyncHandler<out Response<ByteString>>>
 
@@ -92,20 +94,16 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
             SyncHandler { checkAccount() }),
         Route.with(
             em.serializerResponse(SignInResponse::class.java),
-            "POST", base + "/account/sign_in",
+            "POST", base + "/account",
             SyncHandler { signIn(it) }),
         Route.with(
             em.serializerResponse(SignOutResponse::class.java),
-            "POST", base + "/account/sign_out",
+            "DELETE", base + "/account",
             SyncHandler { signOut() }),
         Route.with(
-            em.serializerResponse(GetPlayersResponse::class.java),
-            "GET", base + "/players",
-            SyncHandler { getPlayers() }),
-        Route.with(
-            em.serializerResponse(GetPlayerInfoResponse::class.java),
-            "GET", base + "/players/<pid>",
-            SyncHandler { getPlayerInfo(it.pathArgs()["pid"]!!) })
+            em.serializerResponse(RebootResponse::class.java),
+            "PUT", base + "/state",
+            SyncHandler { reboot() })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -120,7 +118,7 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     val password = rc.request().parameter("password").orElse(null)
 
     if (userName.isNullOrBlank() || password.isNullOrBlank()) {
-      throw IllegalArgumentException("empty userName or password")
+      throw IllegalArgumentException("empty user_name or password")
     }
 
     heosClient.signIn(userName, password)
@@ -130,6 +128,38 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     heosClient.signOut()
   }
 
+  private fun reboot() = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.reboot()
+  }
+}
+
+class HeosPlayerCommandResource(private val heosClient: HeosClient) {
+  fun routes(): List<KRoute> {
+    val base = "/players"
+    val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
+
+    val routes = listOf(
+        Route.with(
+            em.serializerResponse(GetPlayersResponse::class.java),
+            "GET", base + "/players",
+            SyncHandler { getPlayers() }),
+        Route.with(
+            em.serializerResponse(GetPlayerInfoResponse::class.java),
+            "GET", base + "/players/<pid>",
+            SyncHandler { getPlayerInfo(it.pathArgs()["pid"]!!) }),
+        Route.with(
+            em.serializerResponse(GetPlayStateResponse::class.java),
+            "GET", base + "/players/<pid>/state",
+            SyncHandler { getPlayState(it.pathArgs()["pid"]!!) }),
+        Route.with(
+            em.serializerResponse(SetPlayStateResponse::class.java),
+            "PATCH", base + "/players/<pid>/state",
+            SyncHandler { setPlayState(it.pathArgs()["pid"]!!, it) })
+    ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
+
+    return Api.prefixRoutes(routes, Api.Version.V0)
+  }
+
   private fun getPlayers() = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getPlayers()
   }
@@ -137,13 +167,21 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
   private fun getPlayerInfo(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getPlayerInfo(pid)
   }
-}
 
-class HeosPlayerCommandResource(heosClient: HeosClient) {
-  fun routes(): List<KRoute> {
-    val base = "/player"
-    val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
+  private fun getPlayState(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getPlayState(pid)
+  }
 
-    return emptyList()
+  private fun setPlayState(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val state = rc.request().parameter("state")
+        .map { state ->
+          println(state)
+          Try.of { PlayState.from(state) }
+              .getOrElseThrow(Supplier { IllegalArgumentException("invalid state") })
+        }
+        .orElseThrow({ IllegalArgumentException("missing state") })
+
+    heosClient.setPlayState(pid, state)
   }
 }

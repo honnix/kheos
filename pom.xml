@@ -146,11 +146,6 @@
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
       </dependency>
-      <dependency>
-        <groupId>com.squareup.okio</groupId>
-        <artifactId>okio</artifactId>
-        <version>1.6.0</version>
-      </dependency>
       <!-- test related packages -->
       <dependency>
         <groupId>io.kotlintest</groupId>

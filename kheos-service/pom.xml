@@ -30,6 +30,10 @@
       <artifactId>apollo-entity</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.javaslang</groupId>
+      <artifactId>javaslang</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.squareup.okio</groupId>
       <artifactId>okio</artifactId>
     </dependency>

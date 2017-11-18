@@ -22,6 +22,8 @@ import com.spotify.apollo.test.ServiceHelper
 import com.spotify.apollo.test.unit.ResponseMatchers.hasStatus
 import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
 import io.honnix.kheos.common.*
+import io.honnix.kheos.common.Command.*
+import io.honnix.kheos.common.CommandGroup.*
 import io.honnix.kheos.lib.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.mock.*
@@ -49,7 +51,7 @@ class KheosApiKtTest : StringSpec() {
   init {
     "should call and build success response" {
       val payload = CheckAccountResponse(
-          Heos(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+          Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.SUCCESS, Message()))
       val response = callAndBuildResponse {
         payload
@@ -104,7 +106,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should check account" {
       forAll(allVersions()) { version ->
         val payload = CheckAccountResponse(
-            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+            Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
                 Result.SUCCESS, Message()))
         `when`(heosClient.checkAccount()).thenReturn(payload)
         val response = awaitResponse(
@@ -119,7 +121,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should sign in" {
       forAll(allVersions()) { version ->
         val payload = SignInResponse(
-            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_IN),
+            Heos(GroupedCommand(SYSTEM, SIGN_IN),
                 Result.SUCCESS, Message.Builder()
                 .add("signed_in")
                 .add("un", "user@example.com")
@@ -127,7 +129,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
         `when`(heosClient.signIn("foo", "bar")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("POST",
-                path(version, basePath, "/account/sign_in?user_name=foo&password=bar")))
+                path(version, basePath, "/account?user_name=foo&password=bar")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<SignInResponse>(response.payload().get().toByteArray()) shouldBe
@@ -139,7 +141,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("POST",
-                path(version, basePath, "/account/sign_in?password=bar")))
+                path(version, basePath, "/account?password=bar")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -148,7 +150,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("POST",
-                path(version, basePath, "/account/sign_in?user_name=foo")))
+                path(version, basePath, "/account?user_name=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -156,14 +158,14 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should sign out" {
       forAll(allVersions()) { version ->
         val payload = SignOutResponse(
-            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_OUT),
+            Heos(GroupedCommand(SYSTEM, SIGN_OUT),
                 Result.SUCCESS, Message.Builder()
                 .add("signed_out")
                 .build()))
         `when`(heosClient.signOut()).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/account/sign_out")))
+            serviceHelper.request("DELETE",
+                path(version, basePath, "/account")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<SignOutResponse>(response.payload().get().toByteArray()) shouldBe
@@ -171,10 +173,44 @@ class HeosSystemCommandResourceTest : StringSpec() {
       }
     }
 
+    "should reboot" {
+      forAll(allVersions()) { version ->
+        val payload = RebootResponse(
+            Heos(GroupedCommand(SYSTEM, REBOOT),
+                Result.SUCCESS, Message()))
+        `when`(heosClient.reboot()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, basePath, "/state")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<RebootResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+  }
+}
+
+class HeosPlayerCommandResourceTest : StringSpec() {
+  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
+
+  private val basePath = "/players"
+
+  private val heosClient = mock<HeosClient>()
+
+  private fun init(environment: Environment) {
+    environment.routingEngine()
+        .registerRoutes(HeosPlayerCommandResource(heosClient).routes().stream())
+  }
+
+  init {
+    serviceHelper.start()
+    autoClose(serviceHelper)
+
     "should get players" {
       forAll(allVersions()) { version ->
         val payload = GetPlayersResponse(
-            Heos(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYERS),
+            Heos(GroupedCommand(PLAYER, GET_PLAYERS),
                 Result.SUCCESS, Message()),
             listOf(
                 Player("name0", "0", "model0",
@@ -196,18 +232,75 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should get player info" {
       forAll(allVersions()) { version ->
         val payload = GetPlayerInfoResponse(
-            Heos(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYER_INFO),
+            Heos(GroupedCommand(PLAYER, GET_PLAYER_INFO),
                 Result.SUCCESS, Message()),
             Player("name0", "0", "model0",
                 "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
 
-        `when`(heosClient.getPlayerInfo("name0")).thenReturn(payload)
+        `when`(heosClient.getPlayerInfo("0")).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/players/name0")))
+            serviceHelper.request("GET", path(version, basePath, "/players/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetPlayerInfoResponse>(response.payload().get().toByteArray()) shouldBe
             payload
+      }
+    }
+
+    "should get play state" {
+      forAll(allVersions()) { version ->
+        val payload = GetPlayStateResponse(
+            Heos(GroupedCommand(PLAYER, GET_PLAY_STATE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("state", "play")
+                .build()))
+
+        `when`(heosClient.getPlayState("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/players/0/state")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should set play state" {
+      forAll(allVersions()) { version ->
+        val payload = SetPlayStateResponse(
+            Heos(GroupedCommand(PLAYER, SET_PLAY_STATE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("state", "play")
+                .build()))
+
+        `when`(heosClient.setPlayState("0", PlayState.PLAY)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/players/0/state?state=play")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if no state" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/players/0/state")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid state" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/players/0/state?state=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
   }

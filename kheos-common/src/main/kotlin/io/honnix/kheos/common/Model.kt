@@ -144,6 +144,10 @@ enum class PlayState(private val state: String) {
   PAUSE("pause"),
   STOP("Stop");
 
+  companion object {
+    fun from(state: String) = PlayState.valueOf(state.toUpperCase())
+  }
+
   override fun toString() = state
 }
 
