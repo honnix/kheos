@@ -192,5 +192,23 @@ class HeosSystemCommandResourceTest : StringSpec() {
             payload
       }
     }
+
+    "should get player info" {
+      forAll(allVersions()) { version ->
+        val payload = GetPlayerInfoResponse(
+            Heos(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYER_INFO),
+                Result.SUCCESS, Message()),
+            Player("name0", "0", "model0",
+                "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
+
+        `when`(heosClient.getPlayerInfo("name0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/players/name0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetPlayerInfoResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
   }
 }

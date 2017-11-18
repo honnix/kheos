@@ -93,7 +93,7 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(SignInResponse::class.java),
             "POST", base + "/account/sign_in",
-            SyncHandler { rc -> signIn(rc) }),
+            SyncHandler { signIn(it) }),
         Route.with(
             em.serializerResponse(SignOutResponse::class.java),
             "POST", base + "/account/sign_out",
@@ -101,8 +101,11 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(GetPlayersResponse::class.java),
             "GET", base + "/players",
-            SyncHandler { getPlayers() })
-
+            SyncHandler { getPlayers() }),
+        Route.with(
+            em.serializerResponse(GetPlayerInfoResponse::class.java),
+            "GET", base + "/players/<pid>",
+            SyncHandler { getPlayerInfo(it.pathArgs()["pid"]!!) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -129,6 +132,10 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
 
   private fun getPlayers() = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getPlayers()
+  }
+
+  private fun getPlayerInfo(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getPlayerInfo(pid)
   }
 }
 
