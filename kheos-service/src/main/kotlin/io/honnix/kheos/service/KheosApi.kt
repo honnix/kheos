@@ -135,7 +135,7 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
 
 class HeosPlayerCommandResource(private val heosClient: HeosClient) {
   fun routes(): List<KRoute> {
-    val base = "/players"
+    val base = "/player"
     val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
 
     val routes = listOf(

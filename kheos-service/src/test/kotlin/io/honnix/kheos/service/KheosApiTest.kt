@@ -203,7 +203,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
 class HeosPlayerCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
-  private val basePath = "/players"
+  private val basePath = "/player"
 
   private val heosClient = mock<HeosClient>()
 
