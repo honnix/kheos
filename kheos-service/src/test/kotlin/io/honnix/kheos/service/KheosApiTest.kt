@@ -22,7 +22,6 @@ import com.spotify.apollo.test.ServiceHelper
 import com.spotify.apollo.test.unit.ResponseMatchers.hasStatus
 import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
 import io.honnix.kheos.common.*
-import io.honnix.kheos.common.Status
 import io.honnix.kheos.lib.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.mock.*
@@ -50,7 +49,7 @@ class KheosApiKtTest : StringSpec() {
   init {
     "should call and build success response" {
       val payload = CheckAccountResponse(
-          Status(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+          Heos(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
               Result.SUCCESS, Message()))
       val response = callAndBuildResponse {
         payload
@@ -105,7 +104,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should check account" {
       forAll(allVersions()) { version ->
         val payload = CheckAccountResponse(
-            Status(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
                 Result.SUCCESS, Message()))
         `when`(heosClient.checkAccount()).thenReturn(payload)
         val response = awaitResponse(
@@ -120,7 +119,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should sign in" {
       forAll(allVersions()) { version ->
         val payload = SignInResponse(
-            Status(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_IN),
+            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_IN),
                 Result.SUCCESS, Message.Builder()
                 .add("signed_in")
                 .add("un", "user@example.com")
@@ -157,7 +156,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should sign out" {
       forAll(allVersions()) { version ->
         val payload = SignOutResponse(
-            Status(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_OUT),
+            Heos(GroupedCommand(CommandGroup.SYSTEM, Command.SIGN_OUT),
                 Result.SUCCESS, Message.Builder()
                 .add("signed_out")
                 .build()))
@@ -175,7 +174,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
     "should get players" {
       forAll(allVersions()) { version ->
         val payload = GetPlayersResponse(
-            Status(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYERS),
+            Heos(GroupedCommand(CommandGroup.PLAYER, Command.GET_PLAYERS),
                 Result.SUCCESS, Message()),
             listOf(
                 Player("name0", "0", "model0",

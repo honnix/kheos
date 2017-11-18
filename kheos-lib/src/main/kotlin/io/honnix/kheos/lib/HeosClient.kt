@@ -195,8 +195,8 @@ internal class HeosClientImpl(host: String,
 
     val response = JSON.mapper.readValue(rawResponse, T::class.java)
 
-    if (response.status.result === Result.FAIL) {
-      throw HeosCommandException.build(response.status.message)
+    if (response.heos.result === Result.FAIL) {
+      throw HeosCommandException.build(response.heos.message)
     }
 
     return response
@@ -621,8 +621,8 @@ internal class HeosChangeEventsClientImpl(host: String,
 
     val response = JSON.mapper.readValue(rawResponse, RegisterForChangeEventsResponse::class.java)
 
-    if (response.status.result === Result.FAIL) {
-      throw HeosCommandException.build(response.status.message)
+    if (response.heos.result === Result.FAIL) {
+      throw HeosCommandException.build(response.heos.message)
     }
   }
 

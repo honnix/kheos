@@ -84,7 +84,7 @@ class JSONTest : StringSpec({
 
   "should serialize and deserialize" {
     val origin = CheckAccountResponse(
-        Status(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
+        Heos(GroupedCommand(CommandGroup.SYSTEM, Command.CHECK_ACCOUNT),
             Result.SUCCESS, Message()))
     JSON.deserialize<CheckAccountResponse>(JSON.serialize(origin)) shouldBe origin
   }
