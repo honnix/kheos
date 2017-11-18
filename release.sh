@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -ex
 
 mvn -s ~/.m2/settings.xml.honnix release:prepare -DpushChanges=false
 
