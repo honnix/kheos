@@ -340,11 +340,11 @@ data class Option(val id: Int, val name: String) {
   }
 }
 
-data class Status(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
-                  val command: GroupedCommand,
-                  val result: Result,
-                  @JsonDeserialize(converter = Str2MessageConverter::class)
-                  val message: Message)
+data class Heos(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
+                val command: GroupedCommand,
+                val result: Result,
+                @JsonDeserialize(converter = Str2MessageConverter::class)
+                val message: Message)
 
 data class Player(val name: String, val pid: String,
                   val model: String, val version: String, val ip: String,
@@ -457,116 +457,116 @@ data class Image(@JsonDeserialize(converter = Str2URLConverter::class)
 data class Metadata(val albumId: String, val images: List<Image>)
 
 interface GenericResponse {
-  val status: Status
+  val heos: Heos
 }
 
-data class HeartbeatResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class HeartbeatResponse(override val heos: Heos) : GenericResponse
 
-data class CheckAccountResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class CheckAccountResponse(override val heos: Heos) : GenericResponse
 
-data class SignInResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SignInResponse(override val heos: Heos) : GenericResponse
 
-data class SignOutResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SignOutResponse(override val heos: Heos) : GenericResponse
 
-data class RebootResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class RebootResponse(override val heos: Heos) : GenericResponse
 
-data class GetPlayersResponse(@JsonProperty("heos") override val status: Status,
+data class GetPlayersResponse(override val heos: Heos,
                               val payload: List<Player>) : GenericResponse
 
-data class GetPlayerInfoResponse(@JsonProperty("heos") override val status: Status,
+data class GetPlayerInfoResponse(override val heos: Heos,
                                  val payload: Player) : GenericResponse
 
-data class GetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class GetPlayStateResponse(override val heos: Heos) : GenericResponse
 
-data class SetPlayStateResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetPlayStateResponse(override val heos: Heos) : GenericResponse
 
-data class GetNowPlayingMediaResponse(@JsonProperty("heos") override val status: Status,
+data class GetNowPlayingMediaResponse(override val heos: Heos,
                                       val payload: NowPlayingMedia,
                                       val options: Options = emptyList()) : GenericResponse
 
-data class GetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class GetVolumeResponse(override val heos: Heos) : GenericResponse
 
-data class SetVolumeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetVolumeResponse(override val heos: Heos) : GenericResponse
 
-data class VolumeUpResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class VolumeUpResponse(override val heos: Heos) : GenericResponse
 
-data class VolumeDownResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class VolumeDownResponse(override val heos: Heos) : GenericResponse
 
-data class GetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class GetMuteResponse(override val heos: Heos) : GenericResponse
 
-data class SetMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetMuteResponse(override val heos: Heos) : GenericResponse
 
-data class ToggleMuteResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class ToggleMuteResponse(override val heos: Heos) : GenericResponse
 
-data class GetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class GetPlayModeResponse(override val heos: Heos) : GenericResponse
 
-data class SetPlayModeResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetPlayModeResponse(override val heos: Heos) : GenericResponse
 
-data class GetQueueResponse(@JsonProperty("heos") override val status: Status,
+data class GetQueueResponse(override val heos: Heos,
                             val payload: List<QueueItem>) : GenericResponse
 
-data class PlayQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class PlayQueueResponse(override val heos: Heos) : GenericResponse
 
-data class RemoveFromQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class RemoveFromQueueResponse(override val heos: Heos) : GenericResponse
 
-data class SaveQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SaveQueueResponse(override val heos: Heos) : GenericResponse
 
-data class ClearQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class ClearQueueResponse(override val heos: Heos) : GenericResponse
 
-data class PlayNextResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class PlayNextResponse(override val heos: Heos) : GenericResponse
 
-data class PlayPreviousResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class PlayPreviousResponse(override val heos: Heos) : GenericResponse
 
-data class GetGroupsResponse(@JsonProperty("heos") override val status: Status,
+data class GetGroupsResponse(override val heos: Heos,
                              val payload: List<Group>) : GenericResponse
 
-data class GetGroupInfoResponse(@JsonProperty("heos") override val status: Status,
+data class GetGroupInfoResponse(override val heos: Heos,
                                 val payload: Group) : GenericResponse
 
-data class SetGroupResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetGroupResponse(override val heos: Heos) : GenericResponse
 
-data class GetMusicSourcesResponse(@JsonProperty("heos") override val status: Status,
+data class GetMusicSourcesResponse(override val heos: Heos,
                                    val payload: List<MusicSource>) : GenericResponse
 
-data class GetMusicSourceInfoResponse(@JsonProperty("heos") override val status: Status,
+data class GetMusicSourceInfoResponse(override val heos: Heos,
                                       val payload: MusicSource) : GenericResponse
 
-data class BrowseMediaSourcesResponse(@JsonProperty("heos") override val status: Status,
+data class BrowseMediaSourcesResponse(override val heos: Heos,
                                       val payload: List<MusicSource>,
                                       val options: Options = emptyList()) : GenericResponse
 
-data class BrowseTopMusicResponse(@JsonProperty("heos") override val status: Status,
+data class BrowseTopMusicResponse(override val heos: Heos,
                                   val payload: List<Media>) : GenericResponse
 
-data class BrowseSourceContainersResponse(@JsonProperty("heos") override val status: Status,
+data class BrowseSourceContainersResponse(override val heos: Heos,
                                           val payload: List<Media>,
                                           val options: Options = emptyList()) : GenericResponse
 
-data class GetSearchCriteriaResponse(@JsonProperty("heos") override val status: Status,
+data class GetSearchCriteriaResponse(override val heos: Heos,
                                      val payload: List<SearchCriteria>) : GenericResponse
 
-data class SearchResponse(@JsonProperty("heos") override val status: Status,
+data class SearchResponse(override val heos: Heos,
                           val payload: List<Media>) : GenericResponse
 
-data class PlayStreamResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class PlayStreamResponse(override val heos: Heos) : GenericResponse
 
-data class PlayInputResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class PlayInputResponse(override val heos: Heos) : GenericResponse
 
-data class AddToQueueResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class AddToQueueResponse(override val heos: Heos) : GenericResponse
 
-data class RenamePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class RenamePlaylistResponse(override val heos: Heos) : GenericResponse
 
-data class DeletePlaylistResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class DeletePlaylistResponse(override val heos: Heos) : GenericResponse
 
-data class RetrieveMetadataResponse(@JsonProperty("heos") override val status: Status,
+data class RetrieveMetadataResponse(override val heos: Heos,
                                     val payload: List<Metadata>) : GenericResponse
 
-data class GetServiceOptionsResponse(@JsonProperty("heos") override val status: Status,
+data class GetServiceOptionsResponse(override val heos: Heos,
                                      val payload: Options) : GenericResponse
 
-data class SetServiceOptionResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class SetServiceOptionResponse(override val heos: Heos) : GenericResponse
 
-data class RegisterForChangeEventsResponse(@JsonProperty("heos") override val status: Status) : GenericResponse
+data class RegisterForChangeEventsResponse(override val heos: Heos) : GenericResponse
 
 enum class ChangeEventCommand(private val command: String) {
   PLAYER_NOW_PLAYING_PROGRESS("player_now_playing_progress"),

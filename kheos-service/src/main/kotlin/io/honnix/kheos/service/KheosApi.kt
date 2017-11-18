@@ -18,7 +18,6 @@
 package io.honnix.kheos.service
 
 import com.spotify.apollo.*
-import com.spotify.apollo.Status
 import com.spotify.apollo.Status.*
 import com.spotify.apollo.entity.*
 import com.spotify.apollo.route.*

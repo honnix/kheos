@@ -97,7 +97,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should schedule heartbeat" {
       val response = HeartbeatResponse(
-          Status(GroupedCommand(SYSTEM, HEART_BEAT),
+          Heos(GroupedCommand(SYSTEM, HEART_BEAT),
               Result.SUCCESS, Message(mapOf())))
 
       val (input, output) = prepareInputOutput(response)
@@ -114,7 +114,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should fail heartbeat" {
       val response = HeartbeatResponse(
-          Status(GroupedCommand(SYSTEM, HEART_BEAT),
+          Heos(GroupedCommand(SYSTEM, HEART_BEAT),
               Result.FAIL, Message.Builder()
               .add("eid", ErrorId.INTERNAL_ERROR.eid)
               .add("text", "System Internal Error")
@@ -143,7 +143,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should check account" {
       val expectedResponse = CheckAccountResponse(
-          Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
+          Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.SUCCESS, Message()))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -157,7 +157,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should fail to check account" {
       val response = CheckAccountResponse(
-          Status(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
+          Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
               Result.FAIL, Message.Builder()
               .add("eid", ErrorId.INTERNAL_ERROR.eid)
               .add("text", "System Internal Error")
@@ -185,7 +185,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should sign in" {
       val expectedResponse = SignInResponse(
-          Status(GroupedCommand(SYSTEM, SIGN_IN),
+          Heos(GroupedCommand(SYSTEM, SIGN_IN),
               Result.SUCCESS, Message.Builder()
               .add("signed_in")
               .add("un", "user@example.com")
@@ -202,7 +202,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should sign out" {
       val expectedResponse = SignOutResponse(
-          Status(GroupedCommand(SYSTEM, SIGN_OUT),
+          Heos(GroupedCommand(SYSTEM, SIGN_OUT),
               Result.SUCCESS, Message.Builder()
               .add("signed_out")
               .build()))
@@ -218,7 +218,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should reboot" {
       val expectedResponse = RebootResponse(
-          Status(GroupedCommand(SYSTEM, REBOOT),
+          Heos(GroupedCommand(SYSTEM, REBOOT),
               Result.SUCCESS, Message()))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -232,7 +232,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get all players" {
       val expectedResponse = GetPlayersResponse(
-          Status(GroupedCommand(PLAYER, GET_PLAYERS),
+          Heos(GroupedCommand(PLAYER, GET_PLAYERS),
               Result.SUCCESS, Message()),
           listOf(
               Player("name0", "0", "model0",
@@ -252,7 +252,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get player info" {
       val expectedResponse = GetPlayerInfoResponse(
-          Status(GroupedCommand(PLAYER, GET_PLAYER_INFO),
+          Heos(GroupedCommand(PLAYER, GET_PLAYER_INFO),
               Result.SUCCESS, Message()),
           Player("name0", "0", "model0",
               "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
@@ -268,7 +268,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get play state" {
       val expectedResponse = GetPlayStateResponse(
-          Status(GroupedCommand(PLAYER, GET_PLAY_STATE),
+          Heos(GroupedCommand(PLAYER, GET_PLAY_STATE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("state", "play")
@@ -285,7 +285,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set play state" {
       val expectedResponse = SetPlayStateResponse(
-          Status(GroupedCommand(PLAYER, SET_PLAY_STATE),
+          Heos(GroupedCommand(PLAYER, SET_PLAY_STATE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("state", "play")
@@ -302,7 +302,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get now playing meida" {
       val expectedResponse = GetNowPlayingMediaResponse(
-          Status(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
+          Heos(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()),
@@ -323,7 +323,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get player volume" {
       val expectedResponse = GetVolumeResponse(
-          Status(GroupedCommand(PLAYER, GET_VOLUME),
+          Heos(GroupedCommand(PLAYER, GET_VOLUME),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("level", "10")
@@ -340,7 +340,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set player volume" {
       val expectedResponse = SetVolumeResponse(
-          Status(GroupedCommand(PLAYER, SET_VOLUME),
+          Heos(GroupedCommand(PLAYER, SET_VOLUME),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("level", "10")
@@ -363,7 +363,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should player volume up" {
       val expectedResponse = VolumeUpResponse(
-          Status(GroupedCommand(PLAYER, VOLUME_UP),
+          Heos(GroupedCommand(PLAYER, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("step", "3")
@@ -380,7 +380,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should player volume up with default step" {
       val expectedResponse = VolumeUpResponse(
-          Status(GroupedCommand(PLAYER, VOLUME_UP),
+          Heos(GroupedCommand(PLAYER, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("step", "5")
@@ -403,7 +403,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should player volume down" {
       val expectedResponse = VolumeDownResponse(
-          Status(GroupedCommand(PLAYER, VOLUME_DOWN),
+          Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("step", "3")
@@ -420,7 +420,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should player volume down with default step" {
       val expectedResponse = VolumeDownResponse(
-          Status(GroupedCommand(PLAYER, VOLUME_DOWN),
+          Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("step", "5")
@@ -443,7 +443,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get player mute" {
       val expectedResponse = GetMuteResponse(
-          Status(GroupedCommand(PLAYER, GET_MUTE),
+          Heos(GroupedCommand(PLAYER, GET_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -459,7 +459,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set player mute" {
       val expectedResponse = SetMuteResponse(
-          Status(GroupedCommand(PLAYER, SET_MUTE),
+          Heos(GroupedCommand(PLAYER, SET_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("state", MuteState.OFF)
@@ -476,7 +476,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should toggle player mute" {
       val expectedResponse = ToggleMuteResponse(
-          Status(GroupedCommand(PLAYER, TOGGLE_MUTE),
+          Heos(GroupedCommand(PLAYER, TOGGLE_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -492,7 +492,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get play mode" {
       val expectedResponse = GetPlayModeResponse(
-          Status(GroupedCommand(PLAYER, GET_PLAY_MODE),
+          Heos(GroupedCommand(PLAYER, GET_PLAY_MODE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -508,7 +508,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set mute" {
       val expectedResponse = SetPlayModeResponse(
-          Status(GroupedCommand(PLAYER, SET_PLAY_MODE),
+          Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("repeat", PlayRepeatState.ON)
@@ -526,7 +526,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get queue" {
       val expectedResponse = GetQueueResponse(
-          Status(GroupedCommand(PLAYER, GET_QUEUE),
+          Heos(GroupedCommand(PLAYER, GET_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()),
@@ -550,7 +550,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get queue if range is empty" {
       val expectedResponse = GetQueueResponse(
-          Status(GroupedCommand(PLAYER, GET_QUEUE),
+          Heos(GroupedCommand(PLAYER, GET_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()),
@@ -568,7 +568,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play queue" {
       val expectedResponse = PlayQueueResponse(
-          Status(GroupedCommand(PLAYER, PLAY_QUEUE),
+          Heos(GroupedCommand(PLAYER, PLAY_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("qid", "0")
@@ -585,7 +585,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should remove from queue" {
       val expectedResponse = RemoveFromQueueResponse(
-          Status(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
+          Heos(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("qid", "0,1,2,3")
@@ -608,7 +608,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should save queue" {
       val expectedResponse = SaveQueueResponse(
-          Status(GroupedCommand(PLAYER, SAVE_QUEUE),
+          Heos(GroupedCommand(PLAYER, SAVE_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("name", "foo bar")
@@ -625,7 +625,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should clear queue" {
       val expectedResponse = ClearQueueResponse(
-          Status(GroupedCommand(PLAYER, CLEAR_QUEUE),
+          Heos(GroupedCommand(PLAYER, CLEAR_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -641,7 +641,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play next" {
       val expectedResponse = PlayNextResponse(
-          Status(GroupedCommand(PLAYER, PLAY_NEXT),
+          Heos(GroupedCommand(PLAYER, PLAY_NEXT),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -657,7 +657,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play previous" {
       val expectedResponse = PlayPreviousResponse(
-          Status(GroupedCommand(PLAYER, PLAY_PREVIOUS),
+          Heos(GroupedCommand(PLAYER, PLAY_PREVIOUS),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .build()))
@@ -673,7 +673,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get groups" {
       val expectedResponse = GetGroupsResponse(
-          Status(GroupedCommand(GROUP, GET_GROUPS),
+          Heos(GroupedCommand(GROUP, GET_GROUPS),
               Result.SUCCESS, Message()),
           listOf(
               Group("foo", "0",
@@ -693,7 +693,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get group info" {
       val expectedResponse = GetGroupInfoResponse(
-          Status(GroupedCommand(GROUP, GET_GROUPS),
+          Heos(GroupedCommand(GROUP, GET_GROUPS),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .build()),
@@ -712,7 +712,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set group" {
       val expectedResponse = SetGroupResponse(
-          Status(GroupedCommand(GROUP, SET_GROUP),
+          Heos(GroupedCommand(GROUP, SET_GROUP),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("name", "foo")
@@ -736,7 +736,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get group volume" {
       val expectedResponse = GetVolumeResponse(
-          Status(GroupedCommand(GROUP, GET_VOLUME),
+          Heos(GroupedCommand(GROUP, GET_VOLUME),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("level", "10")
@@ -753,7 +753,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set group volume" {
       val expectedResponse = SetVolumeResponse(
-          Status(GroupedCommand(GROUP, SET_VOLUME),
+          Heos(GroupedCommand(GROUP, SET_VOLUME),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("level", "10")
@@ -776,7 +776,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should group volume up" {
       val expectedResponse = VolumeUpResponse(
-          Status(GroupedCommand(GROUP, VOLUME_UP),
+          Heos(GroupedCommand(GROUP, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("step", "3")
@@ -793,7 +793,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should group volume up with default step" {
       val expectedResponse = VolumeUpResponse(
-          Status(GroupedCommand(GROUP, VOLUME_UP),
+          Heos(GroupedCommand(GROUP, VOLUME_UP),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("step", "5")
@@ -816,7 +816,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should group volume down" {
       val expectedResponse = VolumeDownResponse(
-          Status(GroupedCommand(GROUP, VOLUME_DOWN),
+          Heos(GroupedCommand(GROUP, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("step", "3")
@@ -833,7 +833,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should group volume down with default step" {
       val expectedResponse = VolumeDownResponse(
-          Status(GroupedCommand(GROUP, VOLUME_DOWN),
+          Heos(GroupedCommand(GROUP, VOLUME_DOWN),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("step", "5")
@@ -856,7 +856,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get group mute" {
       val expectedResponse = GetMuteResponse(
-          Status(GroupedCommand(GROUP, GET_MUTE),
+          Heos(GroupedCommand(GROUP, GET_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .build()))
@@ -872,7 +872,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set group mute" {
       val expectedResponse = SetMuteResponse(
-          Status(GroupedCommand(GROUP, SET_MUTE),
+          Heos(GroupedCommand(GROUP, SET_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .add("state", MuteState.OFF)
@@ -889,7 +889,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should toggle group mute" {
       val expectedResponse = ToggleMuteResponse(
-          Status(GroupedCommand(GROUP, TOGGLE_MUTE),
+          Heos(GroupedCommand(GROUP, TOGGLE_MUTE),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .build()))
@@ -905,7 +905,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get music sources" {
       val expectedResponse = GetMusicSourcesResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES),
+          Heos(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES),
               Result.SUCCESS, Message()),
           listOf(
               MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "0"),
@@ -922,7 +922,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get music source info" {
       val expectedResponse = GetMusicSourceInfoResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
+          Heos(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
               Result.SUCCESS, Message()),
           MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
 
@@ -937,7 +937,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse music sources" {
       val expectedResponse = BrowseMediaSourcesResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("returned", 2)
@@ -960,7 +960,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse music sources if range is empty" {
       val expectedResponse = BrowseMediaSourcesResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("returned", 2)
@@ -989,7 +989,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse top music" {
       val expectedResponse = BrowseTopMusicResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("returned", 6)
@@ -1020,7 +1020,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse top music if range is empty" {
       val expectedResponse = BrowseTopMusicResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("returned", 6)
@@ -1057,7 +1057,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse source containers" {
       val expectedResponse = BrowseSourceContainersResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("cid", "0")
@@ -1091,7 +1091,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should browse source containers if range is empty" {
       val expectedResponse = BrowseSourceContainersResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("cid", "0")
@@ -1131,7 +1131,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get search criteria" {
       val expectedResponse = GetSearchCriteriaResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
+          Heos(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .build()),
@@ -1150,7 +1150,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should search" {
       val expectedResponse = SearchResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+          Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("search", "*")
@@ -1183,7 +1183,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should search if range is empty" {
       val expectedResponse = SearchResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+          Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("search", "*")
@@ -1222,7 +1222,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play stream" {
       val expectedResponse = PlayStreamResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
+          Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("sid", "0")
@@ -1242,7 +1242,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play input" {
       val expectedResponse = PlayInputResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+          Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("mid", "0")
@@ -1262,7 +1262,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should play input from specified input" {
       val expectedResponse = PlayInputResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+          Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("input", "inputs/aux_in_1")
@@ -1280,7 +1280,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should add container to queue" {
       val expectedResponse = AddToQueueResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("sid", "0")
@@ -1300,7 +1300,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should add track to queue" {
       val expectedResponse = AddToQueueResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+          Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
               .add("sid", "0")
@@ -1322,7 +1322,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should rename playlist" {
       val expectedResponse = RenamePlaylistResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
+          Heos(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("cid", "0")
@@ -1341,7 +1341,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should delete playlist" {
       val expectedResponse = DeletePlaylistResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
+          Heos(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("cid", "0")
@@ -1359,7 +1359,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should retrieve metadata" {
       val expectedResponse = RetrieveMetadataResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
+          Heos(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
               Result.SUCCESS, Message.Builder()
               .add("sid", "0")
               .add("cid", "0")
@@ -1382,7 +1382,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get service options" {
       val expectedResponse = GetServiceOptionsResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS),
+          Heos(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS),
               Result.SUCCESS, Message()),
           listOf(mapOf("play" to
               listOf(
@@ -1401,7 +1401,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should set service option" {
       val expectedResponse = SetServiceOptionResponse(
-          Status(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
+          Heos(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
               Result.SUCCESS, Message.Builder()
               .add("option", Option.CREATE_NEW_STATION.id)
               .add("sid", "0")
@@ -1454,7 +1454,7 @@ class HeosChangeEventsClientTest : StringSpec() {
 
   private fun start(): Pair<ByteArrayInputStream, ByteArrayOutputStream> {
     val expectedResponse = RegisterForChangeEventsResponse(
-        Status(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
+        Heos(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
             Result.SUCCESS, Message.Builder()
             .add("enable", "on")
             .build()))
@@ -1500,7 +1500,7 @@ class HeosChangeEventsClientTest : StringSpec() {
 
     "should fail to start" {
       val expectedResponse = RegisterForChangeEventsResponse(
-          Status(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
+          Heos(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
               Result.FAIL, Message.Builder()
               .add("eid", ErrorId.INTERNAL_ERROR.eid)
               .add("text", "System Internal Error")
