@@ -155,6 +155,15 @@ class HeosSystemCommandResourceTest : StringSpec() {
       }
     }
 
+    "should return client error if no user_name nor password" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/account")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
     "should sign out" {
       forAll(allVersions()) { version ->
         val payload = SignOutResponse(

@@ -146,15 +146,15 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(GetPlayerInfoResponse::class.java),
             "GET", base + "/players/<pid>",
-            SyncHandler { getPlayerInfo(it.pathArgs()["pid"]!!) }),
+            SyncHandler { getPlayerInfo(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(GetPlayStateResponse::class.java),
             "GET", base + "/players/<pid>/state",
-            SyncHandler { getPlayState(it.pathArgs()["pid"]!!) }),
+            SyncHandler { getPlayState(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(SetPlayStateResponse::class.java),
             "PATCH", base + "/players/<pid>/state",
-            SyncHandler { setPlayState(it.pathArgs()["pid"]!!, it) })
+            SyncHandler { setPlayState(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
