@@ -32,6 +32,7 @@ import io.kotlintest.specs.StringSpec
 import okio.ByteString
 import org.hamcrest.MatcherAssert.assertThat
 import org.mockito.Mockito.verify
+import java.net.URL
 import java.util.concurrent.*
 
 class ApiTest : StringSpec() {
@@ -310,6 +311,30 @@ class HeosPlayerCommandResourceTest : StringSpec() {
             serviceHelper.request("PATCH",
                 path(version, basePath, "/players/0/state?state=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should get now playing media" {
+      forAll(allVersions()) { version ->
+        val payload = GetNowPlayingMediaResponse(
+            Heos(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()),
+            NowPlayingMedia(MediaType.STATION, "song", "album", "artist",
+                URL("http://example.com"), "0", "0", "0", "0",
+                "station"),
+            listOf(mapOf("play" to
+                listOf(Option.ADD_TO_HEOS_FAVORITES))))
+
+        `when`(heosClient.getNowPlayingMedia("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/players/0/now_playing_media")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetNowPlayingMediaResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
       }
     }
   }

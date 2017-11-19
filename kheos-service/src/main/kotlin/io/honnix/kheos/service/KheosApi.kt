@@ -154,7 +154,11 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(SetPlayStateResponse::class.java),
             "PATCH", base + "/players/<pid>/state",
-            SyncHandler { setPlayState(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { setPlayState(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(GetNowPlayingMediaResponse::class.java),
+            "GET", base + "/players/<pid>/now_playing_media",
+            SyncHandler { getNowPlayingMedia(it.pathArgs().getValue("pid")) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -183,5 +187,9 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         .orElseThrow({ IllegalArgumentException("missing state") })
 
     heosClient.setPlayState(pid, state)
+  }
+
+  private fun getNowPlayingMedia(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getNowPlayingMedia(pid)
   }
 }
