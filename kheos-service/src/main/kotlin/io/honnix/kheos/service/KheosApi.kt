@@ -135,37 +135,37 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
 
 class HeosPlayerCommandResource(private val heosClient: HeosClient) {
   fun routes(): List<KRoute> {
-    val base = "/player"
+    val base = "/players"
     val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
 
     val routes = listOf(
         Route.with(
             em.serializerResponse(GetPlayersResponse::class.java),
-            "GET", base + "/players",
+            "GET", base,
             SyncHandler { getPlayers() }),
         Route.with(
             em.serializerResponse(GetPlayerInfoResponse::class.java),
-            "GET", base + "/players/<pid>",
+            "GET", base + "/<pid>",
             SyncHandler { getPlayerInfo(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(GetPlayStateResponse::class.java),
-            "GET", base + "/players/<pid>/state",
+            "GET", base + "/<pid>/state",
             SyncHandler { getPlayState(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(SetPlayStateResponse::class.java),
-            "PATCH", base + "/players/<pid>/state",
+            "PATCH", base + "/<pid>/state",
             SyncHandler { setPlayState(it.pathArgs().getValue("pid"), it) }),
         Route.with(
             em.serializerResponse(GetNowPlayingMediaResponse::class.java),
-            "GET", base + "/players/<pid>/now_playing_media",
+            "GET", base + "/<pid>/now_playing_media",
             SyncHandler { getNowPlayingMedia(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(GetVolumeResponse::class.java),
-            "GET", base + "/players/<pid>/volume",
+            "GET", base + "/<pid>/volume",
             SyncHandler { getVolume(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(SetVolumeResponse::class.java),
-            "PATCH", base + "/players/<pid>/volume",
+            "PATCH", base + "/<pid>/volume",
             SyncHandler { setVolume(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 

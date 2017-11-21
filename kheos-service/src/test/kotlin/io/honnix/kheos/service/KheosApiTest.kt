@@ -204,7 +204,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
 class HeosPlayerCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
-  private val basePath = "/player"
+  private val basePath = "/players"
 
   private val heosClient = mock<HeosClient>()
 
@@ -231,7 +231,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
 
         `when`(heosClient.getPlayers()).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/players")))
+            serviceHelper.request("GET", path(version, basePath, "")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetPlayersResponse>(response.payload().get().toByteArray()) shouldBe
@@ -249,7 +249,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
 
         `when`(heosClient.getPlayerInfo("0")).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/players/0")))
+            serviceHelper.request("GET", path(version, basePath, "/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetPlayerInfoResponse>(response.payload().get().toByteArray()) shouldBe
@@ -268,7 +268,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
 
         `when`(heosClient.getPlayState("0")).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/players/0/state")))
+            serviceHelper.request("GET", path(version, basePath, "/0/state")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
@@ -288,7 +288,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         `when`(heosClient.setPlayState("0", PlayState.PLAY)).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("PATCH", path(version, basePath,
-                "/players/0/state?state=play")))
+                "/0/state?state=play")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<SetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
@@ -300,7 +300,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("PATCH",
-                path(version, basePath, "/players/0/state")))
+                path(version, basePath, "/0/state")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -309,7 +309,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("PATCH",
-                path(version, basePath, "/players/0/state?state=foo")))
+                path(version, basePath, "/0/state?state=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -330,7 +330,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         `when`(heosClient.getNowPlayingMedia("0")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/players/0/now_playing_media")))
+                "/0/now_playing_media")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetNowPlayingMediaResponse>(
@@ -350,7 +350,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         `when`(heosClient.getVolume(PLAYER, "0")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/players/0/volume")))
+                "/0/volume")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetVolumeResponse>(
@@ -370,7 +370,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         `when`(heosClient.setVolume(PLAYER, "0", 10)).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("PATCH", path(version, basePath,
-                "/players/0/volume?level=10")))
+                "/0/volume?level=10")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<SetVolumeResponse>(
@@ -382,7 +382,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("PATCH",
-                path(version, basePath, "/players/0/volume")))
+                path(version, basePath, "/0/volume")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -391,7 +391,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("PATCH",
-                path(version, basePath, "/players/0/volume?level=foo")))
+                path(version, basePath, "/0/volume?level=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
