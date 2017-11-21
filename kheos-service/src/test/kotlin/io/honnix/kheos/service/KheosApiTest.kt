@@ -337,5 +337,63 @@ class HeosPlayerCommandResourceTest : StringSpec() {
             response.payload().get().toByteArray()) shouldBe payload
       }
     }
+
+    "should get volume" {
+      forAll(allVersions()) { version ->
+        val payload = GetVolumeResponse(
+            Heos(GroupedCommand(PLAYER, GET_VOLUME),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("level", "10")
+                .build()))
+
+        `when`(heosClient.getVolume(PLAYER, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/players/0/volume")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetVolumeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set volume" {
+      forAll(allVersions()) { version ->
+        val payload = SetVolumeResponse(
+            Heos(GroupedCommand(PLAYER, SET_VOLUME),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("level", "10")
+                .build()))
+
+        `when`(heosClient.setVolume(PLAYER, "0", 10)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/players/0/volume?level=10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetVolumeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if no level" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/players/0/volume")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if level is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/players/0/volume?level=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }

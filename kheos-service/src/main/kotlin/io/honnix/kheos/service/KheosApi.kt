@@ -158,7 +158,15 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(GetNowPlayingMediaResponse::class.java),
             "GET", base + "/players/<pid>/now_playing_media",
-            SyncHandler { getNowPlayingMedia(it.pathArgs().getValue("pid")) })
+            SyncHandler { getNowPlayingMedia(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(GetVolumeResponse::class.java),
+            "GET", base + "/players/<pid>/volume",
+            SyncHandler { getVolume(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(SetVolumeResponse::class.java),
+            "PATCH", base + "/players/<pid>/volume",
+            SyncHandler { setVolume(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -180,7 +188,6 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
       = callAndBuildResponse({ heosClient.reconnect() }) {
     val state = rc.request().parameter("state")
         .map { state ->
-          println(state)
           Try.of { PlayState.from(state) }
               .getOrElseThrow(Supplier { IllegalArgumentException("invalid state") })
         }
@@ -191,5 +198,21 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
 
   private fun getNowPlayingMedia(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getNowPlayingMedia(pid)
+  }
+
+  private fun getVolume(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getVolume(CommandGroup.PLAYER, pid)
+  }
+
+  private fun setVolume(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val level = rc.request().parameter("level")
+        .map { level ->
+          Try.of { level.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("level should be an integer") })
+        }
+        .orElseThrow({ IllegalArgumentException("missing level") })
+
+    heosClient.setVolume(CommandGroup.PLAYER, pid, level)
   }
 }
