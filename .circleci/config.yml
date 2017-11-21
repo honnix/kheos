@@ -4,6 +4,11 @@ jobs:
     working_directory: ~/kheos
     docker:
       - image: maven:3.5.0-jdk-8
+    filters:
+      tags:
+        only: /.*/
+      branches:
+        ignore: /.*/
     steps:
       - checkout
       - setup_remote_docker
