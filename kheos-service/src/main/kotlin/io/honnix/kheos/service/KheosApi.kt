@@ -90,19 +90,19 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
     val routes = listOf(
         Route.with(
             em.serializerResponse(CheckAccountResponse::class.java),
-            "GET", base + "/account",
+            "GET", "$base/account",
             SyncHandler { checkAccount() }),
         Route.with(
             em.serializerResponse(SignInResponse::class.java),
-            "POST", base + "/account",
+            "POST", "$base/account",
             SyncHandler { signIn(it) }),
         Route.with(
             em.serializerResponse(SignOutResponse::class.java),
-            "DELETE", base + "/account",
+            "DELETE", "$base/account",
             SyncHandler { signOut() }),
         Route.with(
             em.serializerResponse(RebootResponse::class.java),
-            "PUT", base + "/state",
+            "PUT", "$base/state",
             SyncHandler { reboot() })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
@@ -145,27 +145,27 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
             SyncHandler { getPlayers() }),
         Route.with(
             em.serializerResponse(GetPlayerInfoResponse::class.java),
-            "GET", base + "/<pid>",
+            "GET", "$base/<pid>",
             SyncHandler { getPlayerInfo(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(GetPlayStateResponse::class.java),
-            "GET", base + "/<pid>/state",
+            "GET", "$base/<pid>/state",
             SyncHandler { getPlayState(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(SetPlayStateResponse::class.java),
-            "PATCH", base + "/<pid>/state",
+            "PATCH", "$base/<pid>/state",
             SyncHandler { setPlayState(it.pathArgs().getValue("pid"), it) }),
         Route.with(
             em.serializerResponse(GetNowPlayingMediaResponse::class.java),
-            "GET", base + "/<pid>/now_playing_media",
+            "GET", "$base/<pid>/now_playing_media",
             SyncHandler { getNowPlayingMedia(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(GetVolumeResponse::class.java),
-            "GET", base + "/<pid>/volume",
+            "GET", "$base/<pid>/volume",
             SyncHandler { getVolume(it.pathArgs().getValue("pid")) }),
         Route.with(
             em.serializerResponse(SetVolumeResponse::class.java),
-            "PATCH", base + "/<pid>/volume",
+            "PATCH", "$base/<pid>/volume",
             SyncHandler { setVolume(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
