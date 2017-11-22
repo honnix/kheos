@@ -10,7 +10,7 @@
   <groupId>io.honnix</groupId>
   <artifactId>kheos</artifactId>
   <packaging>pom</packaging>
-  <version>0.0.5</version>
+  <version>0.0.6-SNAPSHOT</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -43,7 +43,7 @@
     <url>https://github.com/honnix/kheos</url>
     <connection>scm:git:git@github.com:honnix/kheos.git</connection>
     <developerConnection>scm:git:git@github.com:honnix/kheos.git</developerConnection>
-    <tag>v0.0.5</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <modules>
