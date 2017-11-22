@@ -4,9 +4,6 @@ jobs:
     working_directory: ~/kheos
     docker:
       - image: maven:3.5.0-jdk-8
-    filters:
-      tags:
-        only: /.*/
     steps:
       - checkout
       - setup_remote_docker
@@ -42,3 +39,11 @@ jobs:
           LATEST_IMAGE_NAME=${IMAGE_NAME%:*}:latest
           docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
           docker push $LATEST_IMAGE_NAME
+workflows:
+  version: 2
+  build-n-push-image:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
