@@ -7,8 +7,6 @@ jobs:
     filters:
       tags:
         only: /.*/
-      branches:
-        ignore: /.*/
     steps:
       - checkout
       - setup_remote_docker
