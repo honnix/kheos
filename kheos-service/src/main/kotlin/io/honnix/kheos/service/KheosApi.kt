@@ -226,31 +226,23 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
 
   private fun volumeUp(pid: String, rc: RequestContext)
       = callAndBuildResponse({ heosClient.reconnect() }) {
-    rc.request().parameter("step")
+    val step = rc.request().parameter("step")
         .map { step ->
           Try.of { step.toInt() }
               .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
         }
-        .map { step ->
-          heosClient.volumeUp(CommandGroup.PLAYER, pid, step)
-        }
-        .orElseGet {
-          heosClient.volumeUp(CommandGroup.PLAYER, pid)
-        }
+        .orElse(HeosClient.DEFAULT_VOLUME_UP_DOWN_STEP)
+    heosClient.volumeUp(CommandGroup.PLAYER, pid, step)
   }
 
   private fun volumeDown(pid: String, rc: RequestContext)
       = callAndBuildResponse({ heosClient.reconnect() }) {
-    rc.request().parameter("step")
+    val step = rc.request().parameter("step")
         .map { step ->
           Try.of { step.toInt() }
               .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
         }
-        .map { step ->
-          heosClient.volumeDown(CommandGroup.PLAYER, pid, step)
-        }
-        .orElseGet {
-          heosClient.volumeDown(CommandGroup.PLAYER, pid)
-        }
+        .orElse(HeosClient.DEFAULT_VOLUME_UP_DOWN_STEP)
+    heosClient.volumeDown(CommandGroup.PLAYER, pid, step)
   }
 }

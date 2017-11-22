@@ -37,11 +37,27 @@ internal fun mkCommand(command: GroupedCommand, attributes: Attributes): String 
 interface HeosClient : Closeable {
   companion object {
     fun newInstance(host: String): HeosClient = HeosClientImpl(host)
+
+    val DEFAULT_HEARTBEAT_INITIAL_DELAY: Long = 0
+
+    val DEFAULT_HEARTBEAT_INTERVAL: Long = 30
+
+    val DEFAULT_VOLUME_UP_DOWN_STEP = 5
+
+    val DEFAULT_RANGE = IntRange.EMPTY
+
+    val DEFAULT_MID = ""
+
+    val DEFAULT_SPID = ""
+
+    val DEFAULT_INPUT = ""
   }
 
   fun reconnect(force: Boolean = false)
 
-  fun startHeartbeat(initialDelay: Long = 0, interval: Long = 30, unit: TimeUnit = TimeUnit.SECONDS)
+  fun startHeartbeat(initialDelay: Long = DEFAULT_HEARTBEAT_INITIAL_DELAY,
+                     interval: Long = DEFAULT_HEARTBEAT_INTERVAL,
+                     unit: TimeUnit = TimeUnit.SECONDS)
 
   fun stopHeartbeat()
 
@@ -69,9 +85,11 @@ interface HeosClient : Closeable {
 
   fun setVolume(commandGroup: CommandGroup, id: String, level: Int): SetVolumeResponse
 
-  fun volumeUp(commandGroup: CommandGroup, id: String, step: Int = 5): VolumeUpResponse
+  fun volumeUp(commandGroup: CommandGroup, id: String,
+               step: Int = DEFAULT_VOLUME_UP_DOWN_STEP): VolumeUpResponse
 
-  fun volumeDown(commandGroup: CommandGroup, id: String, step: Int = 5): VolumeDownResponse
+  fun volumeDown(commandGroup: CommandGroup, id: String,
+                 step: Int = DEFAULT_VOLUME_UP_DOWN_STEP): VolumeDownResponse
 
   fun getMute(commandGroup: CommandGroup, id: String): GetMuteResponse
 
@@ -84,7 +102,7 @@ interface HeosClient : Closeable {
   fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState)
       : SetPlayModeResponse
 
-  fun getQueue(pid: String, range: IntRange = IntRange.EMPTY): GetQueueResponse
+  fun getQueue(pid: String, range: IntRange = DEFAULT_RANGE): GetQueueResponse
 
   fun playQueue(pid: String, qid: String): PlayQueueResponse
 
@@ -108,23 +126,24 @@ interface HeosClient : Closeable {
 
   fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse
 
-  fun browseMusicSources(sid: String, range: IntRange = IntRange.EMPTY): BrowseMediaSourcesResponse
+  fun browseMusicSources(sid: String, range: IntRange = DEFAULT_RANGE): BrowseMediaSourcesResponse
 
-  fun browseTopMusic(sid: String, range: IntRange = IntRange.EMPTY): BrowseTopMusicResponse
+  fun browseTopMusic(sid: String, range: IntRange = DEFAULT_RANGE): BrowseTopMusicResponse
 
-  fun browseSourceContainers(sid: String, cid: String, range: IntRange = IntRange.EMPTY)
+  fun browseSourceContainers(sid: String, cid: String, range: IntRange = DEFAULT_RANGE)
       : BrowseSourceContainersResponse
 
   fun getSearchCriteria(sid: String): GetSearchCriteriaResponse
 
-  fun search(sid: String, search: String, scid: Int, range: IntRange = IntRange.EMPTY): SearchResponse
+  fun search(sid: String, search: String, scid: Int, range: IntRange = DEFAULT_RANGE): SearchResponse
 
   fun playStream(pid: String, sid: String, cid: String, mid: String, name: String): PlayStreamResponse
 
-  fun playInput(pid: String, mid: String = "", spid: String = "", input: String = ""): PlayInputResponse
+  fun playInput(pid: String, mid: String = DEFAULT_MID, spid: String = DEFAULT_SPID,
+                input: String = DEFAULT_INPUT): PlayInputResponse
 
   fun addToQueue(pid: String, sid: String, cid: String,
-                 aid: AddCriteriaId, mid: String = ""): AddToQueueResponse
+                 aid: AddCriteriaId, mid: String = DEFAULT_MID): AddToQueueResponse
 
   fun renamePlaylist(sid: String, cid: String, name: String): RenamePlaylistResponse
 
@@ -134,7 +153,7 @@ interface HeosClient : Closeable {
 
   fun getServiceOptions(): GetServiceOptionsResponse
 
-  fun setServiceOption(option: Option, attributes: Attributes, range: IntRange = IntRange.EMPTY)
+  fun setServiceOption(option: Option, attributes: Attributes, range: IntRange = DEFAULT_RANGE)
       : SetServiceOptionResponse
 }
 

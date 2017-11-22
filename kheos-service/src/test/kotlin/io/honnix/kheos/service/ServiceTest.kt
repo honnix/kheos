@@ -60,7 +60,7 @@ class KheosAppTest : StringSpec() {
       val heosClient = mock<HeosClient>()
       KheosApp({ heosClient }).create(environment)
 
-      verify(heosClient).startHeartbeat(0, 5)
+      verify(heosClient).startHeartbeat(interval = 5)
       verify(closer, times(2)).register(any<Closeable>())
       verify(heosClient).stopHeartbeat()
       verify(heosClient).close()
