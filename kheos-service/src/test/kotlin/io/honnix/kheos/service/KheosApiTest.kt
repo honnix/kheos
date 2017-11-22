@@ -395,5 +395,103 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should volume up" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeUpResponse(
+            Heos(GroupedCommand(PLAYER, VOLUME_UP),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "3")
+                .build()))
+
+        `when`(heosClient.volumeUp(PLAYER, "0", 3)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/up?step=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeUpResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should volume up with default step" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeUpResponse(
+            Heos(GroupedCommand(PLAYER, VOLUME_UP),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "5")
+                .build()))
+
+        `when`(heosClient.volumeUp(PLAYER, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/up")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeUpResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if step is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/volume/up?step=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should volume down" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeDownResponse(
+            Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "3")
+                .build()))
+
+        `when`(heosClient.volumeDown(PLAYER, "0", 3)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/down?step=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeDownResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should volume down with default step" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeDownResponse(
+            Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "5")
+                .build()))
+
+        `when`(heosClient.volumeDown(PLAYER, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/down")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeDownResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if step is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/volume/down?step=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }

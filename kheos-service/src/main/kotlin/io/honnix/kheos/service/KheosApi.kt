@@ -166,7 +166,15 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(SetVolumeResponse::class.java),
             "PATCH", "$base/<pid>/volume",
-            SyncHandler { setVolume(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { setVolume(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(VolumeUpResponse::class.java),
+            "POST", "$base/<pid>/volume/up",
+            SyncHandler { volumeUp(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(VolumeDownResponse::class.java),
+            "POST", "$base/<pid>/volume/down",
+            SyncHandler { volumeDown(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -214,5 +222,35 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         .orElseThrow({ IllegalArgumentException("missing level") })
 
     heosClient.setVolume(CommandGroup.PLAYER, pid, level)
+  }
+
+  private fun volumeUp(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    rc.request().parameter("step")
+        .map { step ->
+          Try.of { step.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
+        }
+        .map { step ->
+          heosClient.volumeUp(CommandGroup.PLAYER, pid, step)
+        }
+        .orElseGet {
+          heosClient.volumeUp(CommandGroup.PLAYER, pid)
+        }
+  }
+
+  private fun volumeDown(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    rc.request().parameter("step")
+        .map { step ->
+          Try.of { step.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
+        }
+        .map { step ->
+          heosClient.volumeDown(CommandGroup.PLAYER, pid, step)
+        }
+        .orElseGet {
+          heosClient.volumeDown(CommandGroup.PLAYER, pid)
+        }
   }
 }
