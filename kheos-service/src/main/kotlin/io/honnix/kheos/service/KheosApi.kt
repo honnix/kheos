@@ -174,7 +174,15 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(VolumeDownResponse::class.java),
             "POST", "$base/<pid>/volume/down",
-            SyncHandler { volumeDown(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { volumeDown(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(GetMuteResponse::class.java),
+            "GET", "$base/<pid>/mute",
+            SyncHandler { getMute(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(SetMuteResponse::class.java),
+            "PATCH", "$base/<pid>/mute",
+            SyncHandler { setMute(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -244,5 +252,21 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         }
         .orElse(HeosClient.DEFAULT_VOLUME_UP_DOWN_STEP)
     heosClient.volumeDown(CommandGroup.PLAYER, pid, step)
+  }
+
+  private fun getMute(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getMute(CommandGroup.PLAYER, pid)
+  }
+
+  private fun setMute(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val state = rc.request().parameter("state")
+        .map { state ->
+          Try.of { MuteState.from(state) }
+              .getOrElseThrow(Supplier { IllegalArgumentException("invalid state") })
+        }
+        .orElseThrow({ IllegalArgumentException("missing state") })
+
+    heosClient.setMute(CommandGroup.PLAYER, pid, state)
   }
 }

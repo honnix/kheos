@@ -155,6 +155,10 @@ enum class MuteState(private val state: String) {
   ON("on"),
   OFF("off");
 
+  companion object {
+    fun from(state: String) = MuteState.valueOf(state.toUpperCase())
+  }
+
   override fun toString() = state
 }
 

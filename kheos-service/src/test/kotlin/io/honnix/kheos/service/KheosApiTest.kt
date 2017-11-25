@@ -493,5 +493,62 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should get mute" {
+      forAll(allVersions()) { version ->
+        val payload = GetMuteResponse(
+            Heos(GroupedCommand(PLAYER, GET_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.getMute(PLAYER, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/0/mute")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set mute" {
+      forAll(allVersions()) { version ->
+        val payload = SetMuteResponse(
+            Heos(GroupedCommand(PLAYER, SET_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("state", MuteState.OFF)
+                .build()))
+
+        `when`(heosClient.setMute(PLAYER, "0", MuteState.OFF)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/0/mute?state=off")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if no state" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/mute")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid state" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/mute?state=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }
