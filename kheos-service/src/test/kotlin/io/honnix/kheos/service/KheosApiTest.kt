@@ -560,6 +560,27 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       }
     }
 
+    "should get play mode" {
+      forAll(allVersions()) { version ->
+        val payload = GetPlayModeResponse(
+            Heos(GroupedCommand(PLAYER, GET_PLAY_MODE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("repeat", PlayRepeatState.OFF)
+                .add("shuffle", PlayShuffleState.OFF)
+                .build()))
+
+        `when`(heosClient.getPlayMode("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/0/mode")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetPlayModeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
     "should set play mode" {
       forAll(allVersions()) { version ->
         val payload = SetPlayModeResponse(

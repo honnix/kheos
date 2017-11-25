@@ -495,6 +495,8 @@ class HeosClientImplTest : StringSpec() {
           Heos(GroupedCommand(PLAYER, GET_PLAY_MODE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
+              .add("repeat", PlayRepeatState.OFF)
+              .add("shuffle", PlayShuffleState.OFF)
               .build()))
 
       val (input, output) = prepareInputOutput(expectedResponse)
