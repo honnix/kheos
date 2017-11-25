@@ -102,6 +102,10 @@ interface HeosClient : Closeable {
   fun setPlayMode(pid: String, repeat: PlayRepeatState, shuffle: PlayShuffleState)
       : SetPlayModeResponse
 
+  fun setPlayMode(pid: String, repeat: PlayRepeatState): SetPlayModeResponse
+
+  fun setPlayMode(pid: String, shuffle: PlayShuffleState): SetPlayModeResponse
+
   fun getQueue(pid: String, range: IntRange = DEFAULT_RANGE): GetQueueResponse
 
   fun playQueue(pid: String, qid: String): PlayQueueResponse
@@ -364,6 +368,20 @@ internal class HeosClientImpl(host: String,
           AttributesBuilder()
               .add("pid", pid)
               .add("repeat", repeat)
+              .add("shuffle", shuffle)
+              .build())
+
+  override fun setPlayMode(pid: String, repeat: PlayRepeatState): SetPlayModeResponse =
+          sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
+              AttributesBuilder()
+                  .add("pid", pid)
+                  .add("repeat", repeat)
+                  .build())
+
+  override fun setPlayMode(pid: String, shuffle: PlayShuffleState): SetPlayModeResponse =
+      sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
+          AttributesBuilder()
+              .add("pid", pid)
               .add("shuffle", shuffle)
               .build())
 

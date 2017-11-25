@@ -506,22 +506,57 @@ class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://player/get_play_mode?pid=0$COMMAND_DELIMITER"
     }
 
-    "should set mute" {
+    "should set play mode" {
       val expectedResponse = SetPlayModeResponse(
           Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
               Result.SUCCESS, Message.Builder()
               .add("pid", "0")
-              .add("repeat", PlayRepeatState.ON)
+              .add("repeat", PlayRepeatState.ON_ALL)
               .add("shuffle", PlayShuffleState.OFF)
               .build()))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.setPlayMode("0", PlayRepeatState.ON, PlayShuffleState.OFF)
+      val actualResponse = heosClient.setPlayMode("0", PlayRepeatState.ON_ALL,
+          PlayShuffleState.OFF)
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
-      output.toString() shouldBe "heos://player/set_play_mode?pid=0&repeat=on&shuffle=off$COMMAND_DELIMITER"
+      output.toString() shouldBe "heos://player/set_play_mode?pid=0&repeat=on_all&shuffle=off$COMMAND_DELIMITER"
+    }
+
+    "should set play mode repeat" {
+      val expectedResponse = SetPlayModeResponse(
+          Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("repeat", PlayRepeatState.ON_ALL)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setPlayMode("0", PlayRepeatState.ON_ALL)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_play_mode?pid=0&repeat=on_all$COMMAND_DELIMITER"
+    }
+
+    "should set play mode shuffle" {
+      val expectedResponse = SetPlayModeResponse(
+          Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .add("shuffle", PlayShuffleState.ON)
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.setPlayMode("0", PlayShuffleState.ON)
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://player/set_play_mode?pid=0&shuffle=on$COMMAND_DELIMITER"
     }
 
     "should get queue" {

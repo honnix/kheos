@@ -559,5 +559,76 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should set play mode" {
+      forAll(allVersions()) { version ->
+        val payload = SetPlayModeResponse(
+            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("repeat", PlayRepeatState.ON_ALL)
+                .add("shuffle", PlayShuffleState.OFF)
+                .build()))
+
+        `when`(heosClient.setPlayMode("0", PlayRepeatState.ON_ALL, PlayShuffleState.OFF))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/0/mode?repeat=on_all&shuffle=off")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetPlayModeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set play mode repeat" {
+      forAll(allVersions()) { version ->
+        val payload = SetPlayModeResponse(
+            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("repeat", PlayRepeatState.ON_ALL)
+                .build()))
+
+        `when`(heosClient.setPlayMode("0", PlayRepeatState.ON_ALL)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/0/mode?repeat=on_all")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetPlayModeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set play mode shuffle" {
+      forAll(allVersions()) { version ->
+        val payload = SetPlayModeResponse(
+            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("shuffle", PlayShuffleState.ON)
+                .build()))
+
+        `when`(heosClient.setPlayMode("0", PlayShuffleState.ON))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath, "/0/mode?shuffle=on")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetPlayModeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing both states" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/mode")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }

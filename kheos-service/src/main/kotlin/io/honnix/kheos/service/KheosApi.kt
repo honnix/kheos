@@ -182,7 +182,15 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(GenericResponse::class.java),
             "PATCH", "$base/<pid>/mute",
-            SyncHandler { setOrToggleMute(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { setOrToggleMute(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(GetPlayModeResponse::class.java),
+            "GET", "$base/<pid>/mode",
+            SyncHandler { getPlayMode(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(SetPlayModeResponse::class.java),
+            "PATCH", "$base/<pid>/mode",
+            SyncHandler { setPlayMode(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -270,6 +278,36 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
       heosClient.setMute(CommandGroup.PLAYER, pid, state.get())
     } else {
       heosClient.toggleMute(CommandGroup.PLAYER, pid)
+    }
+  }
+
+  private fun getPlayMode(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getPlayMode(pid)
+  }
+
+  private fun setPlayMode(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val repeat = rc.request().parameter("repeat")
+        .map { state ->
+          Try.of { PlayRepeatState.from(state) }
+              .getOrElseThrow(Supplier { IllegalArgumentException("invalid repeat state") })
+        }
+    val shuffle = rc.request().parameter("shuffle")
+        .map { state ->
+          Try.of { PlayShuffleState.from(state) }
+              .getOrElseThrow(Supplier { IllegalArgumentException("invalid shuffle state") })
+        }
+    
+    if (!repeat.isPresent && !shuffle.isPresent) {
+      throw IllegalArgumentException("missing both repeat and shuffle states")
+    }
+    
+    if (repeat.isPresent && !shuffle.isPresent) {
+      heosClient.setPlayMode(pid, repeat.get())
+    } else if (!repeat.isPresent && shuffle.isPresent) {
+      heosClient.setPlayMode(pid, shuffle.get())
+    } else {
+      heosClient.setPlayMode(pid, repeat.get(), shuffle.get())
     }
   }
 }

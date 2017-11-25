@@ -163,8 +163,13 @@ enum class MuteState(private val state: String) {
 }
 
 enum class PlayRepeatState(private val state: String) {
-  ON("on"),
+  ON_ALL("on_all"),
+  ON_ONE("on_one"),
   OFF("off");
+
+  companion object {
+    fun from(state: String) = PlayRepeatState.valueOf(state.toUpperCase())
+  }
 
   override fun toString() = state
 }
@@ -172,6 +177,10 @@ enum class PlayRepeatState(private val state: String) {
 enum class PlayShuffleState(private val state: String) {
   ON("on"),
   OFF("off");
+
+  companion object {
+    fun from(state: String) = PlayShuffleState.valueOf(state.toUpperCase())
+  }
 
   override fun toString() = state
 }
