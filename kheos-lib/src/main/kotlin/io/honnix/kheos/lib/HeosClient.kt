@@ -30,8 +30,8 @@ const val HEOS_PORT = 1255
 const val COMMAND_DELIMITER = "\r\n"
 
 internal fun mkCommand(command: GroupedCommand, attributes: Attributes): String {
-  val attributeStr = if (attributes.isNotEmpty()) "?$attributes" else ""
-  return "heos://${command.group.group}/${command.command}$attributeStr"
+  val attributesStr = if (attributes.isNotEmpty()) "?$attributes" else ""
+  return "heos://${command.group.group}/${command.command}$attributesStr"
 }
 
 interface HeosClient : Closeable {
