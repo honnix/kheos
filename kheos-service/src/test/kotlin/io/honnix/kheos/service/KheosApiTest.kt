@@ -630,5 +630,193 @@ class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should get queue" {
+      forAll(allVersions()) { version ->
+        val payload = GetQueueResponse(
+            Heos(GroupedCommand(PLAYER, GET_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()),
+            listOf(QueueItem("song", "album", "artist",
+                URL("http://example.com"), "0", "0", "0")))
+
+        `when`(heosClient.getQueue("0", IntRange(0, 0))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/0/queue?range=0,0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should get queue with default range" {
+      forAll(allVersions()) { version ->
+        val payload = GetQueueResponse(
+            Heos(GroupedCommand(PLAYER, GET_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()),
+            listOf(QueueItem("song", "album", "artist",
+                URL("http://example.com"), "0", "0", "0")))
+
+        `when`(heosClient.getQueue("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/0/queue")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, basePath, "/0/queue?range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should play queue" {
+      forAll(allVersions()) { version ->
+        val payload = PlayQueueResponse(
+            Heos(GroupedCommand(PLAYER, PLAY_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("qid", "0")
+                .build()))
+
+        `when`(heosClient.playQueue("0", "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath, "/0/queue/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should remove a single item from queue" {
+      forAll(allVersions()) { version ->
+        val payload = RemoveFromQueueResponse(
+            Heos(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("qid", "0")
+                .build()))
+
+        `when`(heosClient.removeFromQueue("0", listOf("0"))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("DELETE", path(version, basePath, "/0/queue/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<RemoveFromQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should remove multiple items from queue" {
+      forAll(allVersions()) { version ->
+        val payload = RemoveFromQueueResponse(
+            Heos(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("qid", "0,1")
+                .build()))
+
+        `when`(heosClient.removeFromQueue("0", listOf("0", "1"))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("DELETE", path(version, basePath, "/0/queue?qid=0&qid=1")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<RemoveFromQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should clear queue" {
+      forAll(allVersions()) { version ->
+        val payload = ClearQueueResponse(
+            Heos(GroupedCommand(PLAYER, CLEAR_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.clearQueue("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("DELETE", path(version, basePath, "/0/queue")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<ClearQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should save queue" {
+      forAll(allVersions()) { version ->
+        val payload = SaveQueueResponse(
+            Heos(GroupedCommand(PLAYER, SAVE_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("name", "foo bar")
+                .build()))
+
+        `when`(heosClient.saveQueue("0", "foo bar")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath, "/0/queue?name=foo%20bar")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SaveQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing name" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/queue")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should play next" {
+      forAll(allVersions()) { version ->
+        val payload = PlayNextResponse(
+            Heos(GroupedCommand(PLAYER, PLAY_NEXT),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.playNext("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath, "/0/play/next")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayNextResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should play previous" {
+      forAll(allVersions()) { version ->
+        val payload = PlayPreviousResponse(
+            Heos(GroupedCommand(PLAYER, PLAY_PREVIOUS),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.playPrevious("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath, "/0/play/previous")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayPreviousResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
   }
 }

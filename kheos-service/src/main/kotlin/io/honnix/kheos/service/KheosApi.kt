@@ -190,7 +190,43 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(SetPlayModeResponse::class.java),
             "PATCH", "$base/<pid>/mode",
-            SyncHandler { setPlayMode(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { setPlayMode(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(GetQueueResponse::class.java),
+            "GET", "$base/<pid>/queue",
+            SyncHandler { getQueue(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(PlayQueueResponse::class.java),
+            "POST", "$base/<pid>/queue/<qid>",
+            SyncHandler {
+              playQueue(it.pathArgs().getValue("pid"), it.pathArgs().getValue("qid"))
+            }),
+        Route.with(
+            em.serializerResponse(GenericResponse::class.java),
+            "DELETE", "$base/<pid>/queue/<qid>",
+            SyncHandler {
+              removeFromOrClearQueue(it.pathArgs().getValue("pid"),
+                  listOf(it.pathArgs().getValue("qid")))
+            }),
+        Route.with(
+            em.serializerResponse(GenericResponse::class.java),
+            "DELETE", "$base/<pid>/queue",
+            SyncHandler {
+              removeFromOrClearQueue(it.pathArgs().getValue("pid"),
+                  it.request().parameters().getOrDefault("qid", emptyList()))
+            }),
+        Route.with(
+            em.serializerResponse(SaveQueueResponse::class.java),
+            "POST", "$base/<pid>/queue",
+            SyncHandler { saveQueue(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(PlayNextResponse::class.java),
+            "POST", "$base/<pid>/play/next",
+            SyncHandler { playNext(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(PlayPreviousResponse::class.java),
+            "POST", "$base/<pid>/play/previous",
+            SyncHandler { playPrevious(it.pathArgs().getValue("pid")) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -297,11 +333,11 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
           Try.of { PlayShuffleState.from(state) }
               .getOrElseThrow(Supplier { IllegalArgumentException("invalid shuffle state") })
         }
-    
+
     if (!repeat.isPresent && !shuffle.isPresent) {
       throw IllegalArgumentException("missing both repeat and shuffle states")
     }
-    
+
     if (repeat.isPresent && !shuffle.isPresent) {
       heosClient.setPlayMode(pid, repeat.get())
     } else if (!repeat.isPresent && shuffle.isPresent) {
@@ -309,5 +345,51 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     } else {
       heosClient.setPlayMode(pid, repeat.get(), shuffle.get())
     }
+  }
+
+  private fun getQueue(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val range = rc.request().parameter("range")
+        .map { range ->
+          Try.of {
+            val (start, end) = range.split(",").map { it.trim().toInt() }
+            IntRange(start, end)
+          }.getOrElseThrow(Supplier {
+            IllegalArgumentException("range should be of format `start,end`")
+          })
+        }
+        .orElse(HeosClient.DEFAULT_RANGE)
+    heosClient.getQueue(pid, range)
+  }
+
+  private fun playQueue(pid: String, qid: String)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.playQueue(pid, qid)
+  }
+
+  private fun removeFromOrClearQueue(pid: String, qids: List<String>)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    if (qids.isEmpty()) {
+      heosClient.clearQueue(pid)
+    } else {
+      heosClient.removeFromQueue(pid, qids)
+    }
+  }
+
+  private fun saveQueue(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val name = rc.request().parameter("name")
+        .orElseThrow({ IllegalArgumentException("missing name") })
+    heosClient.saveQueue(pid, name)
+  }
+
+  private fun playNext(pid: String)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.playNext(pid)
+  }
+
+  private fun playPrevious(pid: String)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.playPrevious(pid)
   }
 }
