@@ -180,9 +180,9 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
             "GET", "$base/<pid>/mute",
             SyncHandler { getMute(it.pathArgs().getValue("pid")) }),
         Route.with(
-            em.serializerResponse(SetMuteResponse::class.java),
+            em.serializerResponse(GenericResponse::class.java),
             "PATCH", "$base/<pid>/mute",
-            SyncHandler { setMute(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { setOrToggleMute(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -258,15 +258,18 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     heosClient.getMute(CommandGroup.PLAYER, pid)
   }
 
-  private fun setMute(pid: String, rc: RequestContext)
+  private fun setOrToggleMute(pid: String, rc: RequestContext)
       = callAndBuildResponse({ heosClient.reconnect() }) {
     val state = rc.request().parameter("state")
         .map { state ->
           Try.of { MuteState.from(state) }
               .getOrElseThrow(Supplier { IllegalArgumentException("invalid state") })
         }
-        .orElseThrow({ IllegalArgumentException("missing state") })
 
-    heosClient.setMute(CommandGroup.PLAYER, pid, state)
+    if (state.isPresent) {
+      heosClient.setMute(CommandGroup.PLAYER, pid, state.get())
+    } else {
+      heosClient.toggleMute(CommandGroup.PLAYER, pid)
+    }
   }
 }

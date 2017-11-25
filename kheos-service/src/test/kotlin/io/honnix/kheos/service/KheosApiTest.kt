@@ -533,12 +533,21 @@ class HeosPlayerCommandResourceTest : StringSpec() {
       }
     }
 
-    "should return client error if no state" {
+    "should toggle mute if no state" {
       forAll(allVersions()) { version ->
+        val payload = ToggleMuteResponse(
+            Heos(GroupedCommand(PLAYER, TOGGLE_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.toggleMute(PLAYER, "0")).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/mute")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+            serviceHelper.request("PATCH", path(version, basePath, "/0/mute")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<ToggleMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
       }
     }
 
