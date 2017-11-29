@@ -458,11 +458,7 @@ class HeosGroupCommandResource(private val heosClient: HeosClient) {
         .orElseThrow({ IllegalArgumentException("missing group leader") })
     val memberIds = rc.request().parameter("member_ids")
         .map { memberIds ->
-          Try.of {
-            memberIds.split(",").map { it.trim() }
-          }.getOrElseThrow(Supplier {
-            IllegalArgumentException("members should be of format `player_id_1,player_id_2,...`")
-          })
+          memberIds.split(",").map { it.trim() }.filter { it.isNotEmpty() }
         }
         .orElseThrow({ IllegalArgumentException("missing group member(s)") })
     heosClient.setGroup(leaderId, memberIds)
