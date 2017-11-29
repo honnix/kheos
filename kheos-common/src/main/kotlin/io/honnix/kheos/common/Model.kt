@@ -542,6 +542,8 @@ data class GetGroupInfoResponse(override val heos: Heos,
 
 data class SetGroupResponse(override val heos: Heos) : GenericResponse
 
+data class DeleteGroupResponse(override val heos: Heos) : GenericResponse
+
 data class GetMusicSourcesResponse(override val heos: Heos,
                                    val payload: List<MusicSource>) : GenericResponse
 

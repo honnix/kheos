@@ -124,7 +124,9 @@ interface HeosClient : Closeable {
 
   fun getGroupInfo(gid: String): GetGroupInfoResponse
 
-  fun setGroup(pids: List<String>): SetGroupResponse
+  fun setGroup(leaderId: String, memberIds: List<String>): SetGroupResponse
+
+  fun deleteGroup(leaderId: String): DeleteGroupResponse
 
   fun getMusicSources(): GetMusicSourcesResponse
 
@@ -372,11 +374,11 @@ internal class HeosClientImpl(host: String,
               .build())
 
   override fun setPlayMode(pid: String, repeat: PlayRepeatState): SetPlayModeResponse =
-          sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
-              AttributesBuilder()
-                  .add("pid", pid)
-                  .add("repeat", repeat)
-                  .build())
+      sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
+          AttributesBuilder()
+              .add("pid", pid)
+              .add("repeat", repeat)
+              .build())
 
   override fun setPlayMode(pid: String, shuffle: PlayShuffleState): SetPlayModeResponse =
       sendCommand(GroupedCommand(PLAYER, SET_PLAY_MODE),
@@ -450,16 +452,22 @@ internal class HeosClientImpl(host: String,
               .add("gid", gid)
               .build())
 
-  override fun setGroup(pids: List<String>): SetGroupResponse {
-    if (pids.isEmpty()) {
-      throw IllegalArgumentException("at least one pid should be specified")
+  override fun setGroup(leaderId: String, memberIds: List<String>): SetGroupResponse {
+    if (memberIds.isEmpty()) {
+      throw IllegalArgumentException("at least one member should be specified")
     }
 
     return sendCommand(GroupedCommand(GROUP, SET_GROUP),
         AttributesBuilder()
-            .add("pid", pids.joinToString(","))
+            .add("pid", (listOf(leaderId) + memberIds).joinToString(","))
             .build())
   }
+
+  override fun deleteGroup(leaderId: String): DeleteGroupResponse =
+      sendCommand(GroupedCommand(GROUP, SET_GROUP),
+          AttributesBuilder()
+              .add("pid", leaderId)
+              .build())
 
   override fun getMusicSources(): GetMusicSourcesResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES))

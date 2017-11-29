@@ -730,7 +730,7 @@ class HeosClientImplTest : StringSpec() {
 
     "should get group info" {
       val expectedResponse = GetGroupInfoResponse(
-          Heos(GroupedCommand(GROUP, GET_GROUPS),
+          Heos(GroupedCommand(GROUP, GET_GROUP_INFO),
               Result.SUCCESS, Message.Builder()
               .add("gid", "0")
               .build()),
@@ -758,7 +758,7 @@ class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.setGroup(listOf("0", "1", "2"))
+      val actualResponse = heosClient.setGroup("0", listOf("1", "2"))
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -767,8 +767,24 @@ class HeosClientImplTest : StringSpec() {
 
     "should throw if no pid" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.setGroup(emptyList())
+        heosClient.setGroup("0", emptyList())
       }
+    }
+
+    "should delete group" {
+      val expectedResponse = DeleteGroupResponse(
+          Heos(GroupedCommand(GROUP, SET_GROUP),
+              Result.SUCCESS, Message.Builder()
+              .add("pid", "0")
+              .build()))
+
+      val (input, output) = prepareInputOutput(expectedResponse)
+
+      val actualResponse = heosClient.deleteGroup("0")
+
+      actualResponse shouldBe expectedResponse
+      input.available() shouldBe 0
+      output.toString() shouldBe "heos://group/set_group?pid=0$COMMAND_DELIMITER"
     }
 
     "should get group volume" {
