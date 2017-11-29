@@ -841,3 +841,362 @@ class HeosPlayerCommandResourceTest : StringSpec() {
     }
   }
 }
+
+class HeosGroupCommandResourceTest : StringSpec() {
+  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
+
+  private val basePath = "/groups"
+
+  private val heosClient = mock<HeosClient>()
+
+  private fun init(environment: Environment) {
+    environment.routingEngine()
+        .registerRoutes(HeosGroupCommandResource(heosClient).routes().stream())
+  }
+
+  init {
+    serviceHelper.start()
+    autoClose(serviceHelper)
+
+    "should get groups" {
+      forAll(allVersions()) { version ->
+        val payload = GetGroupsResponse(
+            Heos(GroupedCommand(GROUP, GET_GROUPS),
+                Result.SUCCESS, Message()),
+            listOf(
+                Group("foo", "0",
+                    listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
+                        GroupedPlayer("foobar", "1", Role.MEMBER))),
+                Group("bar", "1",
+                    listOf(GroupedPlayer("barbar", "1", Role.LEADER)))))
+
+        `when`(heosClient.getGroups()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetGroupsResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should get group info" {
+      forAll(allVersions()) { version ->
+        val payload = GetGroupInfoResponse(
+            Heos(GroupedCommand(GROUP, GET_GROUP_INFO),
+                Result.SUCCESS, Message.Builder()
+                .add("gid", "0")
+                .build()),
+            Group("foo", "0",
+                listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
+                    GroupedPlayer("foobar", "1", Role.MEMBER))))
+
+        `when`(heosClient.getGroupInfo("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetGroupInfoResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should set group" {
+      forAll(allVersions()) { version ->
+        val payload = SetGroupResponse(
+            Heos(GroupedCommand(GROUP, SET_GROUP),
+                Result.SUCCESS, Message.Builder()
+                .add("gid", "0")
+                .add("name", "foo")
+                .add("pid", "0,1,2")
+                .build()))
+
+        `when`(heosClient.setGroup("0", listOf("1", "2"))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "?leader_id=0&member_ids=1,2")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetGroupResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if no leader_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "?member_ids=1,2")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if no member_ids" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "?leader_id=0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if no leader_id and member_ids" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should delete group" {
+      forAll(allVersions()) { version ->
+        val payload = DeleteGroupResponse(
+            Heos(GroupedCommand(GROUP, SET_GROUP),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.deleteGroup("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("DELETE", path(version, basePath,
+                "?leader_id=0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<DeleteGroupResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if no leader_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("DELETE",
+                path(version, basePath, "")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should get volume" {
+      forAll(allVersions()) { version ->
+        val payload = GetVolumeResponse(
+            Heos(GroupedCommand(GROUP, GET_VOLUME),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("level", "10")
+                .build()))
+
+        `when`(heosClient.getVolume(GROUP, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/0/volume")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetVolumeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set volume" {
+      forAll(allVersions()) { version ->
+        val payload = SetVolumeResponse(
+            Heos(GroupedCommand(GROUP, SET_VOLUME),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("level", "10")
+                .build()))
+
+        `when`(heosClient.setVolume(GROUP, "0", 10)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/0/volume?level=10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetVolumeResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if no level" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/volume")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if level is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/volume?level=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should volume up" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeUpResponse(
+            Heos(GroupedCommand(GROUP, VOLUME_UP),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "3")
+                .build()))
+
+        `when`(heosClient.volumeUp(GROUP, "0", 3)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/up?step=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeUpResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should volume up with default step" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeUpResponse(
+            Heos(GroupedCommand(GROUP, VOLUME_UP),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "5")
+                .build()))
+
+        `when`(heosClient.volumeUp(GROUP, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/up")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeUpResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if step is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/volume/up?step=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should volume down" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeDownResponse(
+            Heos(GroupedCommand(GROUP, VOLUME_DOWN),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "3")
+                .build()))
+
+        `when`(heosClient.volumeDown(GROUP, "0", 3)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/down?step=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeDownResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should volume down with default step" {
+      forAll(allVersions()) { version ->
+        val payload = VolumeDownResponse(
+            Heos(GroupedCommand(GROUP, VOLUME_DOWN),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("step", "5")
+                .build()))
+
+        `when`(heosClient.volumeDown(GROUP, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/volume/down")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<VolumeDownResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if step is not an integer" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/volume/down?step=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should get mute" {
+      forAll(allVersions()) { version ->
+        val payload = GetMuteResponse(
+            Heos(GroupedCommand(GROUP, GET_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.getMute(GROUP, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/0/mute")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set mute" {
+      forAll(allVersions()) { version ->
+        val payload = SetMuteResponse(
+            Heos(GroupedCommand(GROUP, SET_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("state", MuteState.OFF)
+                .build()))
+
+        `when`(heosClient.setMute(GROUP, "0", MuteState.OFF)).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath,
+                "/0/mute?state=off")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should toggle mute if no state" {
+      forAll(allVersions()) { version ->
+        val payload = ToggleMuteResponse(
+            Heos(GroupedCommand(GROUP, TOGGLE_MUTE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .build()))
+
+        `when`(heosClient.toggleMute(GROUP, "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, basePath, "/0/mute")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<ToggleMuteResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if invalid state" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, basePath, "/0/mute?state=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+  }
+}

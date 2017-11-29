@@ -393,3 +393,137 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     heosClient.playPrevious(pid)
   }
 }
+
+class HeosGroupCommandResource(private val heosClient: HeosClient) {
+  fun routes(): List<KRoute> {
+    val base = "/groups"
+    val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
+
+    val routes = listOf(
+        Route.with(
+            em.serializerResponse(GetGroupsResponse::class.java),
+            "GET", base,
+            SyncHandler { getGroups() }),
+        Route.with(
+            em.serializerResponse(GetGroupInfoResponse::class.java),
+            "GET", "$base/<gid>",
+            SyncHandler { getGroupInfo(it.pathArgs().getValue("gid")) }),
+        Route.with(
+            em.serializerResponse(SetGroupResponse::class.java),
+            "POST", base,
+            SyncHandler { upsertGroup(it) }),
+        Route.with(
+            em.serializerResponse(DeleteGroupResponse::class.java),
+            "DELETE", base,
+            SyncHandler { deleteGroup(it) }),
+        Route.with(
+            em.serializerResponse(GetVolumeResponse::class.java),
+            "GET", "$base/<pid>/volume",
+            SyncHandler { getVolume(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(SetVolumeResponse::class.java),
+            "PATCH", "$base/<gid>/volume",
+            SyncHandler { setVolume(it.pathArgs().getValue("gid"), it) }),
+        Route.with(
+            em.serializerResponse(VolumeUpResponse::class.java),
+            "POST", "$base/<gid>/volume/up",
+            SyncHandler { volumeUp(it.pathArgs().getValue("gid"), it) }),
+        Route.with(
+            em.serializerResponse(VolumeDownResponse::class.java),
+            "POST", "$base/<gid>/volume/down",
+            SyncHandler { volumeDown(it.pathArgs().getValue("gid"), it) }),
+        Route.with(
+            em.serializerResponse(GetMuteResponse::class.java),
+            "GET", "$base/<gid>/mute",
+            SyncHandler { getMute(it.pathArgs().getValue("gid")) }),
+        Route.with(
+            em.serializerResponse(GenericResponse::class.java),
+            "PATCH", "$base/<gid>/mute",
+            SyncHandler { setOrToggleMute(it.pathArgs().getValue("gid"), it) })
+    ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
+
+    return Api.prefixRoutes(routes, Api.Version.V0)
+  }
+
+  private fun getGroups() = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getGroups()
+  }
+
+  private fun getGroupInfo(gid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getGroupInfo(gid)
+  }
+
+  private fun upsertGroup(rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
+    val leaderId = rc.request().parameter("leader_id")
+        .orElseThrow({ IllegalArgumentException("missing group leader") })
+    val memberIds = rc.request().parameter("member_ids")
+        .map { memberIds ->
+          memberIds.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        }
+        .orElseThrow({ IllegalArgumentException("missing group member(s)") })
+    heosClient.setGroup(leaderId, memberIds)
+  }
+
+  private fun deleteGroup(rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
+    val leaderId = rc.request().parameter("leader_id")
+        .orElseThrow({ IllegalArgumentException("missing group leader") })
+    heosClient.deleteGroup(leaderId)
+  }
+
+  private fun getVolume(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getVolume(CommandGroup.GROUP, pid)
+  }
+
+  private fun setVolume(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val level = rc.request().parameter("level")
+        .map { level ->
+          Try.of { level.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("level should be an integer") })
+        }
+        .orElseThrow({ IllegalArgumentException("missing level") })
+
+    heosClient.setVolume(CommandGroup.GROUP, pid, level)
+  }
+
+  private fun volumeUp(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val step = rc.request().parameter("step")
+        .map { step ->
+          Try.of { step.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
+        }
+        .orElse(HeosClient.DEFAULT_VOLUME_UP_DOWN_STEP)
+    heosClient.volumeUp(CommandGroup.GROUP, pid, step)
+  }
+
+  private fun volumeDown(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val step = rc.request().parameter("step")
+        .map { step ->
+          Try.of { step.toInt() }
+              .getOrElseThrow(Supplier { IllegalArgumentException("step should be an integer") })
+        }
+        .orElse(HeosClient.DEFAULT_VOLUME_UP_DOWN_STEP)
+    heosClient.volumeDown(CommandGroup.GROUP, pid, step)
+  }
+
+  private fun getMute(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getMute(CommandGroup.GROUP, pid)
+  }
+
+  private fun setOrToggleMute(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val state = rc.request().parameter("state")
+        .map { state ->
+          Try.of { MuteState.from(state) }
+              .getOrElseThrow(Supplier { IllegalArgumentException("invalid state") })
+        }
+
+    if (state.isPresent) {
+      heosClient.setMute(CommandGroup.GROUP, pid, state.get())
+    } else {
+      heosClient.toggleMute(CommandGroup.GROUP, pid)
+    }
+  }
+}
