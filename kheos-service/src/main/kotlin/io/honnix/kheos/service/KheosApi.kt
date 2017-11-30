@@ -527,3 +527,31 @@ class HeosGroupCommandResource(private val heosClient: HeosClient) {
     }
   }
 }
+
+class HeosBrowseCommandResource(private val heosClient: HeosClient) {
+  fun routes(): List<KRoute> {
+    val base = "/browse"
+    val em = EntityMiddleware.forCodec(JacksonEntityCodec.forMapper(JSON.mapper))
+
+    val routes = listOf(
+        Route.with(
+            em.serializerResponse(GetMusicSourcesResponse::class.java),
+            "GET", "$base/music_sources",
+            SyncHandler { getMusicSources() }),
+        Route.with(
+            em.serializerResponse(GetMusicSourceInfoResponse::class.java),
+            "GET", "$base/music_sources/<sid>",
+            SyncHandler { getMusicSourceInfo(it.pathArgs().getValue("sid")) })
+    ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
+
+    return Api.prefixRoutes(routes, Api.Version.V0)
+  }
+
+  private fun getMusicSources() = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getMusicSources()
+  }
+
+  private fun getMusicSourceInfo(sid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getMusicSourceInfo(sid)
+  }
+}

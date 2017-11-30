@@ -24,6 +24,7 @@ import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
 import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Command.*
 import io.honnix.kheos.common.CommandGroup.*
+import io.honnix.kheos.common.MusicSourceType.*
 import io.honnix.kheos.lib.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.mock.*
@@ -1196,6 +1197,60 @@ class HeosGroupCommandResourceTest : StringSpec() {
             serviceHelper.request("PATCH",
                 path(version, basePath, "/0/mute?state=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+  }
+}
+
+class HeosBrowseCommandResourceTest : StringSpec() {
+  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
+
+  private val basePath = "/browse"
+
+  private val heosClient = mock<HeosClient>()
+
+  private fun init(environment: Environment) {
+    environment.routingEngine()
+        .registerRoutes(HeosBrowseCommandResource(heosClient).routes().stream())
+  }
+
+  init {
+    serviceHelper.start()
+    autoClose(serviceHelper)
+
+    "should get music sources" {
+      forAll(allVersions()) { version ->
+        val payload = GetMusicSourcesResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES),
+                Result.SUCCESS, Message()),
+            listOf(
+                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "0"),
+                MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "1")))
+
+        `when`(heosClient.getMusicSources()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/music_sources")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetMusicSourcesResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should get music source info" {
+      forAll(allVersions()) { version ->
+        val payload = GetMusicSourceInfoResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
+                Result.SUCCESS, Message()),
+            MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
+
+        `when`(heosClient.getMusicSourceInfo("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath, "/music_sources/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetMusicSourceInfoResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
       }
     }
   }

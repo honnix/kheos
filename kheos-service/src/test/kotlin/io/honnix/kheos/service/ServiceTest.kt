@@ -66,7 +66,7 @@ class KheosAppTest : StringSpec() {
       verify(heosClient).close()
 
       verify(routingEngine).registerAutoRoute(any())
-      verify(routingEngine, times(3)).registerRoutes(any())
+      verify(routingEngine, times(4)).registerRoutes(any())
     }
 
     "should create no heartbeat" {
@@ -103,7 +103,7 @@ class KheosAppTest : StringSpec() {
       verify(heosClient).close()
 
       verify(routingEngine).registerAutoRoute(any())
-      verify(routingEngine, times(3)).registerRoutes(any())
+      verify(routingEngine, times(4)).registerRoutes(any())
     }
   }
 }

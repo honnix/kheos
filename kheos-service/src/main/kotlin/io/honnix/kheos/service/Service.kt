@@ -43,12 +43,14 @@ class KheosApp(private val heosClientFactory: (String) -> HeosClient) : AppInit 
     val heosSystemCommandResource = HeosSystemCommandResource(heosClient)
     val heosPlayerCommandResource = HeosPlayerCommandResource(heosClient)
     val heosGroupCommandResource = HeosGroupCommandResource(heosClient)
+    val heosBrowseCommandResource = HeosBrowseCommandResource(heosClient)
 
     environment.routingEngine()
         .registerAutoRoute(Route.sync("GET", "/ping") { "pong" })
         .registerRoutes(heosSystemCommandResource.routes().stream())
         .registerRoutes(heosPlayerCommandResource.routes().stream())
         .registerRoutes(heosGroupCommandResource.routes().stream())
+        .registerRoutes(heosBrowseCommandResource.routes().stream())
   }
 }
 
