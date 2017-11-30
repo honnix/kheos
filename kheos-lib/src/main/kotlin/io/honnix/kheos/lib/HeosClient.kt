@@ -174,7 +174,7 @@ internal class HeosClientImpl(host: String,
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  internal data class HeosResponse(override val heos: Heos) : GenericResponse
+  private data class HeosResponse(override val heos: Heos) : GenericResponse
 
   private var inErrorState = false
 
