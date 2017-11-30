@@ -1,5 +1,6 @@
 # kheos
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/ad23a2e5b98945b9979fce95f5fa435f)](https://www.codacy.com/app/hxliang1982/kheos?utm_source=github.com&utm_medium=referral&utm_content=honnix/kheos&utm_campaign=badger)
 [![CircleCI](https://circleci.com/gh/honnix/kheos/tree/master.svg?style=shield)](https://circleci.com/gh/honnix/kheos)
 [![Coverage Status](https://codecov.io/gh/honnix/kheos/branch/master/graph/badge.svg)](https://codecov.io/gh/honnix/kheos)
 [![Maven Central](https://img.shields.io/maven-central/v/io.honnix/kheos.svg)](https://search.maven.org/#search%7Cga%7C1%7Cg%3A%22io.honnix%22%20kheos)
