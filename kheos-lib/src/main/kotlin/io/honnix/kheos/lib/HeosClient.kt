@@ -17,6 +17,7 @@
  */
 package io.honnix.kheos.lib
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Command.*
 import io.honnix.kheos.common.CommandGroup.*
@@ -172,6 +173,9 @@ internal class HeosClientImpl(host: String,
     private val logger = LoggerFactory.getLogger(HeosClientImpl::class.java)
   }
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  internal data class HeosResponse(override val heos: Heos) : GenericResponse
+
   private var inErrorState = false
 
   private lateinit var socket: Socket
@@ -218,13 +222,13 @@ internal class HeosClientImpl(host: String,
 
     logger.debug(rawResponse)
 
-    val response = JSON.mapper.readValue(rawResponse, T::class.java)
+    val heosResponse = JSON.mapper.readValue(rawResponse, HeosResponse::class.java)
 
-    if (response.heos.result === Result.FAIL) {
-      throw HeosCommandException.build(response.heos.message)
+    if (heosResponse.heos.result === Result.FAIL) {
+      throw HeosCommandException.build(heosResponse.heos.message)
     }
 
-    return response
+    return JSON.mapper.readValue(rawResponse, T::class.java)
   }
 
   override fun startHeartbeat(initialDelay: Long, interval: Long, unit: TimeUnit) {
