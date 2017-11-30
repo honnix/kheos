@@ -174,23 +174,23 @@ internal class HeosClientImpl(host: String,
 
   private var inErrorState = false
 
-  private lateinit var clientSocket: Socket
+  private lateinit var socket: Socket
 
   @Synchronized
   override fun reconnect(force: Boolean) {
     if (inErrorState || force) {
       clientSocket().close()
-      clientSocket = socketFactory()
+      socket = socketFactory()
       inErrorState = false
     }
   }
 
   @Synchronized
-  private fun clientSocket() = try {
-    clientSocket
-  } catch (e: UninitializedPropertyAccessException) {
-    clientSocket = socketFactory()
-    clientSocket
+  private fun clientSocket(): Socket {
+    if (!this::socket.isInitialized) {
+      socket = socketFactory()
+    }
+    return socket
   }
 
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
