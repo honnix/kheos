@@ -225,10 +225,11 @@ class HeosPlayerCommandResourceTest : StringSpec() {
                 Result.SUCCESS, Message()),
             listOf(
                 Player("name0", "0", "model0",
-                    "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE),
+                    "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE,
+                    "ADAG0000"),
                 Player("name1", "1", "model1",
                     "0.1", "192.168.1.101", "wifi", Lineout.FIXED,
-                    "100", Control.NETWORK)))
+                    "ADAG0000", "100", Control.NETWORK)))
 
         `when`(heosClient.getPlayers()).thenReturn(payload)
         val response = awaitResponse(
@@ -246,7 +247,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
             Heos(GroupedCommand(PLAYER, GET_PLAYER_INFO),
                 Result.SUCCESS, Message()),
             Player("name0", "0", "model0",
-                "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
+                "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE, "ADAG0000"))
 
         `when`(heosClient.getPlayerInfo("0")).thenReturn(payload)
         val response = awaitResponse(

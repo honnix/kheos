@@ -236,10 +236,11 @@ class HeosClientImplTest : StringSpec() {
               Result.SUCCESS, Message()),
           listOf(
               Player("name0", "0", "model0",
-                  "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE),
+                  "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE,
+                  "ADAG0000"),
               Player("name1", "1", "model1",
                   "0.1", "192.168.1.101", "wifi", Lineout.FIXED,
-                  "100", NETWORK)))
+                  "ADAG0000", "100", NETWORK)))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
@@ -255,7 +256,7 @@ class HeosClientImplTest : StringSpec() {
           Heos(GroupedCommand(PLAYER, GET_PLAYER_INFO),
               Result.SUCCESS, Message()),
           Player("name0", "0", "model0",
-              "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE))
+              "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE, "ADAG0000"))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 

@@ -365,7 +365,7 @@ data class Heos(@JsonDeserialize(converter = Str2GroupedCommandConverter::class)
 
 data class Player(val name: String, val pid: String,
                   val model: String, val version: String, val ip: String,
-                  val network: String, val lineout: Lineout,
+                  val network: String, val lineout: Lineout, val serial: String,
                   val gid: String? = null, val control: Control? = null)
 
 data class NowPlayingMedia(val type: MediaType, val song: String,
