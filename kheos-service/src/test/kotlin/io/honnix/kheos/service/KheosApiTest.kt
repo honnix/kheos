@@ -36,7 +36,7 @@ import org.mockito.Mockito.verify
 import java.net.URL
 import java.util.concurrent.*
 
-class ApiTest : StringSpec() {
+internal class ApiTest : StringSpec() {
   init {
     "should add correct prefix" {
       val route1 = mock<KRoute>()
@@ -49,7 +49,7 @@ class ApiTest : StringSpec() {
   }
 }
 
-class KheosApiKtTest : StringSpec() {
+internal class KheosApiKtTest : StringSpec() {
   init {
     "should call and build success response" {
       val payload = CheckAccountResponse(
@@ -89,7 +89,7 @@ internal fun allVersions() = table(
     row(Api.Version.V0)
 )
 
-class HeosSystemCommandResourceTest : StringSpec() {
+internal class HeosSystemCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
   private val basePath = "/system"
@@ -202,7 +202,7 @@ class HeosSystemCommandResourceTest : StringSpec() {
   }
 }
 
-class HeosPlayerCommandResourceTest : StringSpec() {
+internal class HeosPlayerCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
   private val basePath = "/players"
@@ -844,7 +844,7 @@ class HeosPlayerCommandResourceTest : StringSpec() {
   }
 }
 
-class HeosGroupCommandResourceTest : StringSpec() {
+internal class HeosGroupCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
   private val basePath = "/groups"
@@ -1203,7 +1203,7 @@ class HeosGroupCommandResourceTest : StringSpec() {
   }
 }
 
-class HeosBrowseCommandResourceTest : StringSpec() {
+internal class HeosBrowseCommandResourceTest : StringSpec() {
   private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
 
   private val basePath = "/browse"

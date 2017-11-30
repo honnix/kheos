@@ -29,7 +29,7 @@ import io.kotlintest.specs.StringSpec
 import org.mockito.Mockito.*
 import java.io.Closeable
 
-class KheosAppTest : StringSpec() {
+internal class KheosAppTest : StringSpec() {
   init {
     "should create" {
       val environment = mock<Environment>()

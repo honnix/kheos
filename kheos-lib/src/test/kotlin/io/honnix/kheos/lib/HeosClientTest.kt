@@ -51,7 +51,7 @@ private class QuietDeterministicScheduler : DeterministicScheduler() {
   override fun isShutdown() = isShutdown
 }
 
-class HeosClientImplTest : StringSpec() {
+internal class HeosClientImplTest : StringSpec() {
   private val scheduler = QuietDeterministicScheduler()
   private val socket = mock<Socket>()
   private val heosClient = HeosClientImpl("localhost", { socket }, scheduler)
@@ -1499,7 +1499,7 @@ class HeosClientImplTest : StringSpec() {
   }
 }
 
-class HeosChangeEventsClientTest : StringSpec() {
+internal class HeosChangeEventsClientTest : StringSpec() {
   private val socketExecutorService = QuietDeterministicScheduler()
   private val listenerExecutorService = QuietDeterministicScheduler()
   private val socket = mock<Socket>()

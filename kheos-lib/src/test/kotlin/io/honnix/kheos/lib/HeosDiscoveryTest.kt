@@ -28,7 +28,7 @@ import org.fourthline.cling.registry.*
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 
-class HeosRegistryListenerTest : StringSpec() {
+internal class HeosRegistryListenerTest : StringSpec() {
   init {
     "should invoke callback" {
       val device = mock<RemoteDevice>()
@@ -54,7 +54,7 @@ class HeosRegistryListenerTest : StringSpec() {
   }
 }
 
-class HeosDiscoveryTest : StringSpec() {
+internal class HeosDiscoveryTest : StringSpec() {
   private val upnpService = mock<UpnpService>()
   private val heosDiscovery = HeosDiscovery({ }, upnpService)
 

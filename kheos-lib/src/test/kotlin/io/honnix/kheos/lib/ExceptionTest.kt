@@ -22,7 +22,7 @@ import io.kotlintest.matchers.shouldBe
 import io.kotlintest.properties.forAll
 import io.kotlintest.specs.StringSpec
 
-class HeosCommandExceptionTest : StringSpec({
+internal class HeosCommandExceptionTest : StringSpec({
   "should build correct exception from message" {
     forAll({ eid: Int, text: String ->
       HeosCommandException.build(
