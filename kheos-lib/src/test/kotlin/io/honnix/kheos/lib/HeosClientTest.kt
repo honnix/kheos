@@ -989,7 +989,7 @@ internal class HeosClientImplTest : StringSpec() {
       output.toString() shouldBe "heos://browse/get_source_info?sid=0$COMMAND_DELIMITER"
     }
 
-    "should browse music sources" {
+    "should browse media sources" {
       val expectedResponse = BrowseMediaSourcesResponse(
           Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
               Result.SUCCESS, Message.Builder()
@@ -1005,7 +1005,7 @@ internal class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.browseMusicSources("0", IntRange(0, 10))
+      val actualResponse = heosClient.browseMediaSources("0", IntRange(0, 10))
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1028,7 +1028,7 @@ internal class HeosClientImplTest : StringSpec() {
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.browseMusicSources("0")
+      val actualResponse = heosClient.browseMediaSources("0")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1037,7 +1037,7 @@ internal class HeosClientImplTest : StringSpec() {
 
     "should throw if range start < 0 when browsing music sources" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.browseMusicSources("0", IntRange(-1, 10))
+        heosClient.browseMediaSources("0", IntRange(-1, 10))
       }
     }
 

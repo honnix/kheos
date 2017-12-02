@@ -133,7 +133,7 @@ interface HeosClient : Closeable {
 
   fun getMusicSourceInfo(sid: String): GetMusicSourceInfoResponse
 
-  fun browseMusicSources(sid: String, range: IntRange = DEFAULT_RANGE): BrowseMediaSourcesResponse
+  fun browseMediaSources(sid: String, range: IntRange = DEFAULT_RANGE): BrowseMediaSourcesResponse
 
   fun browseTopMusic(sid: String, range: IntRange = DEFAULT_RANGE): BrowseTopMusicResponse
 
@@ -482,7 +482,7 @@ internal class HeosClientImpl(host: String,
               .add("sid", sid)
               .build())
 
-  override fun browseMusicSources(sid: String, range: IntRange): BrowseMediaSourcesResponse {
+  override fun browseMediaSources(sid: String, range: IntRange): BrowseMediaSourcesResponse {
     if (range.start < 0) {
       throw IllegalArgumentException("range starts from 0, $range given")
     }

@@ -541,7 +541,22 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(GetMusicSourceInfoResponse::class.java),
             "GET", "$base/music_sources/<sid>",
-            SyncHandler { getMusicSourceInfo(it.pathArgs().getValue("sid")) })
+            SyncHandler { getMusicSourceInfo(it.pathArgs().getValue("sid")) }),
+        Route.with(
+            em.serializerResponse(BrowseMediaSourcesResponse::class.java),
+            "GET", "$base/browse/media_sources/<sid>",
+            SyncHandler { browseMediaSources(it.pathArgs().getValue("sid"), it) }),
+        Route.with(
+            em.serializerResponse(BrowseTopMusicResponse::class.java),
+            "GET", "$base/browse/top_music/<sid>",
+            SyncHandler { browseTopMusic(it.pathArgs().getValue("sid"), it) }),
+        Route.with(
+            em.serializerResponse(BrowseSourceContainersResponse::class.java),
+            "GET", "$base/browse/source_containers/<sid>/<cid>",
+            SyncHandler {
+              browseSourceContainers(it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("sid"), it)
+            })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -554,4 +569,47 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
   private fun getMusicSourceInfo(sid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.getMusicSourceInfo(sid)
   }
+
+  private fun browseMediaSources(sid: String, rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
+    val range = rc.request().parameter("range")
+        .map { range ->
+          Try.of {
+            val (start, end) = range.split(",").map { it.trim().toInt() }
+            IntRange(start, end)
+          }.getOrElseThrow(Supplier {
+            IllegalArgumentException("range should be of format `start,end`")
+          })
+        }
+        .orElse(HeosClient.DEFAULT_RANGE)
+    heosClient.browseMediaSources(sid, range)
+  }
+
+  private fun browseTopMusic(sid: String, rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
+    val range = rc.request().parameter("range")
+        .map { range ->
+          Try.of {
+            val (start, end) = range.split(",").map { it.trim().toInt() }
+            IntRange(start, end)
+          }.getOrElseThrow(Supplier {
+            IllegalArgumentException("range should be of format `start,end`")
+          })
+        }
+        .orElse(HeosClient.DEFAULT_RANGE)
+    heosClient.browseTopMusic(sid, range)
+  }
+
+  private fun browseSourceContainers(sid: String, cid: String, rc: RequestContext) =
+      callAndBuildResponse({ heosClient.reconnect() }) {
+        val range = rc.request().parameter("range")
+            .map { range ->
+              Try.of {
+                val (start, end) = range.split(",").map { it.trim().toInt() }
+                IntRange(start, end)
+              }.getOrElseThrow(Supplier {
+                IllegalArgumentException("range should be of format `start,end`")
+              })
+            }
+            .orElse(HeosClient.DEFAULT_RANGE)
+        heosClient.browseSourceContainers(sid, cid, range)
+      }
 }

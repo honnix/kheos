@@ -25,6 +25,7 @@ import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Command.*
 import io.honnix.kheos.common.CommandGroup.*
 import io.honnix.kheos.common.MusicSourceType.*
+import io.honnix.kheos.common.YesNo.*
 import io.honnix.kheos.lib.*
 import io.kotlintest.matchers.shouldBe
 import io.kotlintest.mock.*
@@ -1252,6 +1253,227 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetMusicSourceInfoResponse>(response.payload().get().toByteArray()) shouldBe
             payload
+      }
+    }
+
+    "should browse media sources" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseMediaSourcesResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("returned", 2)
+                .add("count", 2)
+                .build()),
+            listOf(
+                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
+                MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
+            listOf(mapOf("browse" to
+                listOf(Option.CREATE_NEW_STATION))))
+
+        `when`(heosClient.browseMediaSources("0", IntRange(0, 10))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/media_sources/0?range=0,10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should browse media sources with default range" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseMediaSourcesResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("returned", 2)
+                .add("count", 2)
+                .build()),
+            listOf(
+                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
+                MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
+            listOf(mapOf("browse" to
+                listOf(Option.CREATE_NEW_STATION))))
+
+        `when`(heosClient.browseMediaSources("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/media_sources/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, basePath, "/browse/media_sources/0?range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should browse top music" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseTopMusicResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, MediaType.SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, MediaType.STATION, "station name",
+                    URL("http://example.com"), "5")))
+
+        `when`(heosClient.browseTopMusic("0", IntRange(0, 10))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/top_music/0?range=0,10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should browse top music with default range" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseTopMusicResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, MediaType.SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, MediaType.STATION, "station name",
+                    URL("http://example.com"), "5")))
+
+        `when`(heosClient.browseTopMusic("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/top_music/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, basePath, "/browse/top_music/0?range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should browse source containers" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseSourceContainersResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, MediaType.SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, MediaType.STATION, "station name",
+                    URL("http://example.com"), "5")),
+            listOf(mapOf("browse" to
+                listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
+
+        `when`(heosClient.browseSourceContainers("0", "0", IntRange(0, 10))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/source_containers/0/0?range=0,10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseSourceContainersResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should browse source containers with default range" {
+      forAll(allVersions()) { version ->
+        val payload = BrowseSourceContainersResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, MediaType.SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, MediaType.STATION, "station name",
+                    URL("http://example.com"), "5")),
+            listOf(mapOf("browse" to
+                listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
+
+        `when`(heosClient.browseSourceContainers("0", "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, basePath,
+                "/browse/source_containers/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<BrowseSourceContainersResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, basePath, "/browse/source_containers/0/0?range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
   }
