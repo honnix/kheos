@@ -631,7 +631,7 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
       callAndBuildResponse({ heosClient.reconnect() }) {
         val scidInt = Try.of {
           scid.toInt()
-        }.getOrElseThrow(Supplier { 
+        }.getOrElseThrow(Supplier {
           IllegalArgumentException("scid should be an integer")
         })
 
