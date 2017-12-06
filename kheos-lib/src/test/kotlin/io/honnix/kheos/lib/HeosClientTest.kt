@@ -21,7 +21,7 @@ import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Command.*
 import io.honnix.kheos.common.CommandGroup.*
 import io.honnix.kheos.common.Control.NETWORK
-import io.honnix.kheos.common.MediaType.STATION
+import io.honnix.kheos.common.MediaType.*
 import io.honnix.kheos.common.MusicSourceType.*
 import io.honnix.kheos.common.PlayState.PLAY
 import io.honnix.kheos.common.Result
@@ -1050,17 +1050,17 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -1081,17 +1081,17 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
@@ -1119,17 +1119,17 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
               listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
@@ -1153,17 +1153,17 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")),
           listOf(mapOf("browse" to
               listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
@@ -1213,22 +1213,22 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
               MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.search("0", "*", 0, IntRange(0, 10))
+      val actualResponse = heosClient.search("0", 0, "*", IntRange(0, 10))
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1246,22 +1246,22 @@ internal class HeosClientImplTest : StringSpec() {
               .add("count", 6)
               .build()),
           listOf(
-              MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+              MediaArtist(YES, NO, ARTIST, "artist name",
                   URL("http://example.com"), "0", "0"),
-              MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+              MediaAlbum(YES, YES, ALBUM, "album name",
                   URL("http://example.com"), "0", "0", "1"),
-              MediaSong(NO, YES, MediaType.SONG, "song name",
+              MediaSong(NO, YES, SONG, "song name",
                   URL("http://example.com"), "artist name", "album name", "2"),
-              MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+              MediaGenre(YES, NO, GENRE, "genre name",
                   URL("http://example.com"), "0", "3"),
-              MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+              MediaContainer(YES, NO, CONTAINER, "container name",
                   URL("http://example.com"), "0", "4"),
-              MediaStation(NO, YES, MediaType.STATION, "station name",
+              MediaStation(NO, YES, STATION, "station name",
                   URL("http://example.com"), "5")))
 
       val (input, output) = prepareInputOutput(expectedResponse)
 
-      val actualResponse = heosClient.search("0", "*", 0)
+      val actualResponse = heosClient.search("0", 0, "*")
 
       actualResponse shouldBe expectedResponse
       input.available() shouldBe 0
@@ -1270,7 +1270,7 @@ internal class HeosClientImplTest : StringSpec() {
 
     "should throw if range start < 0 when searching" {
       shouldThrow<IllegalArgumentException> {
-        heosClient.search("0", "*", 0, IntRange(-1, 10))
+        heosClient.search("0", 0, "*", IntRange(-1, 10))
       }
     }
 

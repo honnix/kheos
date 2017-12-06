@@ -114,12 +114,10 @@ class HeosSystemCommandResource(private val heosClient: HeosClient) {
   }
 
   private fun signIn(rc: RequestContext) = callAndBuildResponse({ heosClient.reconnect() }) {
-    val userName = rc.request().parameter("user_name").orElse(null)
-    val password = rc.request().parameter("password").orElse(null)
-
-    if (userName.isNullOrBlank() || password.isNullOrBlank()) {
-      throw IllegalArgumentException("empty user_name or password")
-    }
+    val userName = rc.request().parameter("user_name")
+        .orElseThrow { IllegalArgumentException("missing user_name") }
+    val password = rc.request().parameter("password")
+        .orElseThrow { IllegalArgumentException("missing password") }
 
     heosClient.signIn(userName, password)
   }
@@ -556,6 +554,18 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
             SyncHandler {
               browseSourceContainers(it.pathArgs().getValue("sid"),
                   it.pathArgs().getValue("sid"), it)
+            }),
+        Route.with(
+            em.serializerResponse(GetSearchCriteriaResponse::class.java),
+            "GET", "/search_criteria/<sid>",
+            SyncHandler { getSearchCriteria(it.pathArgs().getValue("sid")) }),
+        Route.with(
+            em.serializerResponse(SearchResponse::class.java),
+            "GET", "/search/<sid>/<scid>",
+            SyncHandler {
+              search(it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("scid"),
+                  it)
             })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
@@ -611,5 +621,34 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
             }
             .orElse(HeosClient.DEFAULT_RANGE)
         heosClient.browseSourceContainers(sid, cid, range)
+      }
+
+  private fun getSearchCriteria(sid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getSearchCriteria(sid)
+  }
+
+  private fun search(sid: String, scid: String, rc: RequestContext) =
+      callAndBuildResponse({ heosClient.reconnect() }) {
+        val scidInt = Try.of {
+          scid.toInt()
+        }.getOrElseThrow(Supplier { 
+          IllegalArgumentException("scid should be an integer")
+        })
+
+        val searchString = rc.request().parameter("search_string")
+            .orElseThrow { IllegalArgumentException("missing search_string") }
+
+        val range = rc.request().parameter("range")
+            .map { range ->
+              Try.of {
+                val (start, end) = range.split(",").map { it.trim().toInt() }
+                IntRange(start, end)
+              }.getOrElseThrow(Supplier {
+                IllegalArgumentException("range should be of format `start,end`")
+              })
+            }
+            .orElse(HeosClient.DEFAULT_RANGE)
+
+        heosClient.search(sid, scidInt, searchString, range)
       }
 }

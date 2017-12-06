@@ -142,7 +142,7 @@ interface HeosClient : Closeable {
 
   fun getSearchCriteria(sid: String): GetSearchCriteriaResponse
 
-  fun search(sid: String, search: String, scid: Int, range: IntRange = DEFAULT_RANGE): SearchResponse
+  fun search(sid: String, scid: Int, search: String, range: IntRange = DEFAULT_RANGE): SearchResponse
 
   fun playStream(pid: String, sid: String, cid: String, mid: String, name: String): PlayStreamResponse
 
@@ -526,7 +526,7 @@ internal class HeosClientImpl(host: String,
               .add("sid", sid)
               .build())
 
-  override fun search(sid: String, search: String, scid: Int, range: IntRange): SearchResponse {
+  override fun search(sid: String, scid: Int, search: String, range: IntRange): SearchResponse {
     if (range.start < 0) {
       throw IllegalArgumentException("range starts from 0, $range given")
     }

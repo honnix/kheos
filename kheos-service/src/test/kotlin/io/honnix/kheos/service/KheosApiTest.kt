@@ -24,6 +24,7 @@ import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
 import io.honnix.kheos.common.*
 import io.honnix.kheos.common.Command.*
 import io.honnix.kheos.common.CommandGroup.*
+import io.honnix.kheos.common.MediaType.*
 import io.honnix.kheos.common.MusicSourceType.*
 import io.honnix.kheos.common.YesNo.*
 import io.honnix.kheos.lib.*
@@ -324,7 +325,7 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
                 Result.SUCCESS, Message.Builder()
                 .add("pid", "0")
                 .build()),
-            NowPlayingMedia(MediaType.STATION, "song", "album", "artist",
+            NowPlayingMedia(STATION, "song", "album", "artist",
                 URL("http://example.com"), "0", "0", "0", "0",
                 "station"),
             listOf(mapOf("play" to
@@ -1327,17 +1328,17 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
                 .add("count", 6)
                 .build()),
             listOf(
-                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                MediaArtist(YES, NO, ARTIST, "artist name",
                     URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                MediaAlbum(YES, YES, ALBUM, "album name",
                     URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, MediaType.SONG, "song name",
+                MediaSong(NO, YES, SONG, "song name",
                     URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                MediaGenre(YES, NO, GENRE, "genre name",
                     URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                MediaContainer(YES, NO, CONTAINER, "container name",
                     URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, MediaType.STATION, "station name",
+                MediaStation(NO, YES, STATION, "station name",
                     URL("http://example.com"), "5")))
 
         `when`(heosClient.browseTopMusic("0", IntRange(0, 10))).thenReturn(payload)
@@ -1361,17 +1362,17 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
                 .add("count", 6)
                 .build()),
             listOf(
-                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                MediaArtist(YES, NO, ARTIST, "artist name",
                     URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                MediaAlbum(YES, YES, ALBUM, "album name",
                     URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, MediaType.SONG, "song name",
+                MediaSong(NO, YES, SONG, "song name",
                     URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                MediaGenre(YES, NO, GENRE, "genre name",
                     URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                MediaContainer(YES, NO, CONTAINER, "container name",
                     URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, MediaType.STATION, "station name",
+                MediaStation(NO, YES, STATION, "station name",
                     URL("http://example.com"), "5")))
 
         `when`(heosClient.browseTopMusic("0")).thenReturn(payload)
@@ -1405,17 +1406,17 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
                 .add("count", 6)
                 .build()),
             listOf(
-                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                MediaArtist(YES, NO, ARTIST, "artist name",
                     URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                MediaAlbum(YES, YES, ALBUM, "album name",
                     URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, MediaType.SONG, "song name",
+                MediaSong(NO, YES, SONG, "song name",
                     URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                MediaGenre(YES, NO, GENRE, "genre name",
                     URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                MediaContainer(YES, NO, CONTAINER, "container name",
                     URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, MediaType.STATION, "station name",
+                MediaStation(NO, YES, STATION, "station name",
                     URL("http://example.com"), "5")),
             listOf(mapOf("browse" to
                 listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
@@ -1442,17 +1443,17 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
                 .add("count", 6)
                 .build()),
             listOf(
-                MediaArtist(YES, NO, MediaType.ARTIST, "artist name",
+                MediaArtist(YES, NO, ARTIST, "artist name",
                     URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, MediaType.ALBUM, "album name",
+                MediaAlbum(YES, YES, ALBUM, "album name",
                     URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, MediaType.SONG, "song name",
+                MediaSong(NO, YES, SONG, "song name",
                     URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, MediaType.GENRE, "genre name",
+                MediaGenre(YES, NO, GENRE, "genre name",
                     URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, MediaType.CONTAINER, "container name",
+                MediaContainer(YES, NO, CONTAINER, "container name",
                     URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, MediaType.STATION, "station name",
+                MediaStation(NO, YES, STATION, "station name",
                     URL("http://example.com"), "5")),
             listOf(mapOf("browse" to
                 listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
@@ -1473,6 +1474,126 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         val response = awaitResponse(
             serviceHelper.request("GET",
                 path(version, basePath, "/source_containers/0/0?range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should get search criteria" {
+      forAll(allVersions()) { version ->
+        val payload = GetSearchCriteriaResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .build()),
+            listOf(
+                SearchCriteria("foo", 0, YES),
+                SearchCriteria("bar", 1, NO)))
+
+        `when`(heosClient.getSearchCriteria("0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, "", "/search_criteria/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetSearchCriteriaResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should search" {
+      forAll(allVersions()) { version ->
+        val payload = SearchResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("search", "*")
+                .add("scid", 0)
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, STATION, "station name",
+                    URL("http://example.com"), "5")))
+
+        `when`(heosClient.search("0", 0, "*", IntRange(0, 10))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, "", 
+                "/search/0/0?search_string=*&range=0,10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SearchResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should search if no range" {
+      forAll(allVersions()) { version ->
+        val payload = SearchResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("search", "*")
+                .add("scid", 0)
+                .add("returned", 6)
+                .add("count", 6)
+                .build()),
+            listOf(
+                MediaArtist(YES, NO, ARTIST, "artist name",
+                    URL("http://example.com"), "0", "0"),
+                MediaAlbum(YES, YES, ALBUM, "album name",
+                    URL("http://example.com"), "0", "0", "1"),
+                MediaSong(NO, YES, SONG, "song name",
+                    URL("http://example.com"), "artist name", "album name", "2"),
+                MediaGenre(YES, NO, GENRE, "genre name",
+                    URL("http://example.com"), "0", "3"),
+                MediaContainer(YES, NO, CONTAINER, "container name",
+                    URL("http://example.com"), "0", "4"),
+                MediaStation(NO, YES, STATION, "station name",
+                    URL("http://example.com"), "5")))
+
+        `when`(heosClient.search("0", 0, "*")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, "",
+                "/search/0/0?search_string=*")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SearchResponse>(response.payload().get().toByteArray()) shouldBe
+            payload
+      }
+    }
+
+    "should return client error if invalid scid" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, "", "/search/0/foo?search_string=*")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, "", "/search/0/0?search_string=*&range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if missing search_string" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("GET",
+                path(version, "", "/search/0/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
