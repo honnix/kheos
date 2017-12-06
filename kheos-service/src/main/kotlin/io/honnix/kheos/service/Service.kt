@@ -30,6 +30,7 @@ class KheosApp(private val heosClientFactory: (String) -> HeosClient) : AppInit 
     val heosHost = config.getString("kheos.heos.host")
     val heosClient = heosClientFactory(heosHost)
 
+    heosClient.connect()
     environment.closer().register(heosClient)
 
     if (config.getBoolean("kheos.enable.heartbeat")) {
