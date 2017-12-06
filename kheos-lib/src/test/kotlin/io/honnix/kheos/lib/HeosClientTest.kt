@@ -67,6 +67,8 @@ internal class HeosClientImplTest : StringSpec() {
   }
 
   init {
+    heosClient.connect()
+
     "should create an instance of HeosClientImpl" {
       HeosClient.newInstance("localhost")::class shouldBe HeosClientImpl::class
     }
@@ -1519,7 +1521,7 @@ internal class HeosChangeEventsClientTest : StringSpec() {
     val output = ByteArrayOutputStream()
     `when`(socket.getOutputStream()).thenReturn(output)
 
-    heosChangeEventsClient.start()
+    heosChangeEventsClient.connect()
     return Pair(input, output)
   }
 
@@ -1567,7 +1569,7 @@ internal class HeosChangeEventsClientTest : StringSpec() {
       `when`(socket.getOutputStream()).thenReturn(output)
 
       val exception = shouldThrow<HeosCommandException> {
-        heosChangeEventsClient.start()
+        heosChangeEventsClient.connect()
       }
 
       exception.eid shouldBe ErrorId.INTERNAL_ERROR
@@ -1635,7 +1637,7 @@ fun main(args: Array<String>) {
       System.err.println(event)
     }
   })
-  client.start()
+  client.connect()
 
 
   Thread.sleep(1000 * 10)

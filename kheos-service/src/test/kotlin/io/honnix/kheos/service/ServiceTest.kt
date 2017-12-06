@@ -60,6 +60,7 @@ internal class KheosAppTest : StringSpec() {
       val heosClient = mock<HeosClient>()
       KheosApp({ heosClient }).create(environment)
 
+      verify(heosClient).connect()
       verify(heosClient).startHeartbeat(interval = 5)
       verify(closer, times(2)).register(any<Closeable>())
       verify(heosClient).stopHeartbeat()
@@ -97,6 +98,7 @@ internal class KheosAppTest : StringSpec() {
       val heosClient = mock<HeosClient>()
       KheosApp({ heosClient }).create(environment)
 
+      verify(heosClient).connect()
       verify(heosClient, never()).startHeartbeat()
       verify(closer).register(any<Closeable>())
       verify(heosClient, never()).stopHeartbeat()

@@ -54,6 +54,8 @@ interface HeosClient : Closeable {
     val DEFAULT_INPUT = ""
   }
 
+  fun connect()
+
   fun reconnect(force: Boolean = false)
 
   fun startHeartbeat(initialDelay: Long = DEFAULT_HEARTBEAT_INITIAL_DELAY,
@@ -178,31 +180,28 @@ internal class HeosClientImpl(host: String,
 
   private var inErrorState = false
 
-  private lateinit var socket: Socket
+  private lateinit var clientSocket: Socket
+
+  @Synchronized
+  override fun connect() {
+    clientSocket = socketFactory()
+  }
 
   @Synchronized
   override fun reconnect(force: Boolean) {
     if (inErrorState || force) {
-      clientSocket().close()
-      socket = socketFactory()
+      clientSocket.close()
+      clientSocket = socketFactory()
       inErrorState = false
     }
-  }
-
-  @Synchronized
-  private fun clientSocket(): Socket {
-    if (!this::socket.isInitialized) {
-      socket = socketFactory()
-    }
-    return socket
   }
 
   private inline fun <reified T : GenericResponse> sendCommand(command: GroupedCommand,
                                                                attributes: Attributes = Attributes(mapOf())): T {
     val rawResponse = synchronized(this) {
       try {
-        val output = PrintWriter(clientSocket().getOutputStream(), true)
-        val input = BufferedReader(InputStreamReader(clientSocket().getInputStream()))
+        val output = PrintWriter(clientSocket.getOutputStream(), true)
+        val input = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
 
         val commandToSend = mkCommand(command, attributes)
 
@@ -212,7 +211,7 @@ internal class HeosClientImpl(host: String,
         input.readLine()
       } catch (e: IOException) {
         inErrorState = true
-        val message = "failed to communicate with ${clientSocket().inetAddress}"
+        val message = "failed to communicate with ${clientSocket.inetAddress}"
         logger.error(message)
         throw HeosClientException(message, e)
       }
@@ -252,7 +251,7 @@ internal class HeosClientImpl(host: String,
 
   override fun close() {
     logger.info("closing connection to heos")
-    clientSocket().close()
+    clientSocket.close()
   }
 
   override fun heartbeat(): HeartbeatResponse =
@@ -629,7 +628,7 @@ interface HeosChangeEventsClient : Closeable {
     fun newInstance(host: String): HeosChangeEventsClient = HeosChangeEventsClientImpl(host)
   }
 
-  fun start()
+  fun connect()
 
   fun register(listener: ChangeEventListener): Int
 
@@ -675,7 +674,7 @@ internal class HeosChangeEventsClientImpl(host: String,
     }
   }
 
-  override fun start() {
+  override fun connect() {
     clientSocket = socketFactory()
 
     registerForChangeEvents()
