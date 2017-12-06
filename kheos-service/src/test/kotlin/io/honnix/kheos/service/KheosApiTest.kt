@@ -1231,7 +1231,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
 
         `when`(heosClient.getMusicSources()).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/music_sources")))
+            serviceHelper.request("GET", path(version, "", "/music_sources")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetMusicSourcesResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1248,7 +1248,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
 
         `when`(heosClient.getMusicSourceInfo("0")).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/music_sources/0")))
+            serviceHelper.request("GET", path(version, "", "/music_sources/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<GetMusicSourceInfoResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1274,7 +1274,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseMediaSources("0", IntRange(0, 10))).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/media_sources/0?range=0,10")))
+                "/media_sources/0?range=0,10")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1300,7 +1300,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseMediaSources("0")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/media_sources/0")))
+                "/media_sources/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1312,7 +1312,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("GET",
-                path(version, basePath, "/browse/media_sources/0?range=foo")))
+                path(version, basePath, "/media_sources/0?range=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -1343,7 +1343,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseTopMusic("0", IntRange(0, 10))).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/top_music/0?range=0,10")))
+                "/top_music/0?range=0,10")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1377,7 +1377,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseTopMusic("0")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/top_music/0")))
+                "/top_music/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
@@ -1389,7 +1389,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("GET",
-                path(version, basePath, "/browse/top_music/0?range=foo")))
+                path(version, basePath, "/top_music/0?range=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
@@ -1423,7 +1423,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseSourceContainers("0", "0", IntRange(0, 10))).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/source_containers/0/0?range=0,10")))
+                "/source_containers/0/0?range=0,10")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseSourceContainersResponse>(
@@ -1460,7 +1460,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         `when`(heosClient.browseSourceContainers("0", "0")).thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("GET", path(version, basePath,
-                "/browse/source_containers/0/0")))
+                "/source_containers/0/0")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<BrowseSourceContainersResponse>(
@@ -1472,7 +1472,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
       forAll(allVersions()) { version ->
         val response = awaitResponse(
             serviceHelper.request("GET",
-                path(version, basePath, "/browse/source_containers/0/0?range=foo")))
+                path(version, basePath, "/source_containers/0/0?range=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }

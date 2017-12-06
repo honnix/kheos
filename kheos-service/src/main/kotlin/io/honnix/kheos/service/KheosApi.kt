@@ -536,23 +536,23 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
     val routes = listOf(
         Route.with(
             em.serializerResponse(GetMusicSourcesResponse::class.java),
-            "GET", "$base/music_sources",
+            "GET", "/music_sources",
             SyncHandler { getMusicSources() }),
         Route.with(
             em.serializerResponse(GetMusicSourceInfoResponse::class.java),
-            "GET", "$base/music_sources/<sid>",
+            "GET", "/music_sources/<sid>",
             SyncHandler { getMusicSourceInfo(it.pathArgs().getValue("sid")) }),
         Route.with(
             em.serializerResponse(BrowseMediaSourcesResponse::class.java),
-            "GET", "$base/browse/media_sources/<sid>",
+            "GET", "$base/media_sources/<sid>",
             SyncHandler { browseMediaSources(it.pathArgs().getValue("sid"), it) }),
         Route.with(
             em.serializerResponse(BrowseTopMusicResponse::class.java),
-            "GET", "$base/browse/top_music/<sid>",
+            "GET", "$base/top_music/<sid>",
             SyncHandler { browseTopMusic(it.pathArgs().getValue("sid"), it) }),
         Route.with(
             em.serializerResponse(BrowseSourceContainersResponse::class.java),
-            "GET", "$base/browse/source_containers/<sid>/<cid>",
+            "GET", "$base/source_containers/<sid>/<cid>",
             SyncHandler {
               browseSourceContainers(it.pathArgs().getValue("sid"),
                   it.pathArgs().getValue("sid"), it)
