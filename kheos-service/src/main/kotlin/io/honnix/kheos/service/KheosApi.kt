@@ -224,7 +224,17 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(PlayPreviousResponse::class.java),
             "POST", "$base/<pid>/play/previous",
-            SyncHandler { playPrevious(it.pathArgs().getValue("pid")) })
+            SyncHandler { playPrevious(it.pathArgs().getValue("pid")) }),
+        Route.with(
+            em.serializerResponse(PlayStreamResponse::class.java),
+            "POST", "$base/<pid>/play/stream/<sid>/<cid>/<mid>",
+            SyncHandler {
+              playStream(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it.pathArgs().getValue("mid"),
+                  it)
+            })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -381,14 +391,19 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     heosClient.saveQueue(pid, name)
   }
 
-  private fun playNext(pid: String)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
+  private fun playNext(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.playNext(pid)
   }
 
-  private fun playPrevious(pid: String)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
+  private fun playPrevious(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.playPrevious(pid)
+  }
+
+  private fun playStream(pid: String, sid: String, cid: String, mid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val name = rc.request().parameter("name")
+        .orElseThrow({ IllegalArgumentException("missing name") })
+    heosClient.playStream(pid, sid, cid, mid, name)
   }
 }
 

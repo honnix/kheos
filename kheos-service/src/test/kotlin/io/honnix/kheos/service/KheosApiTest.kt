@@ -843,6 +843,39 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
             response.payload().get().toByteArray()) shouldBe payload
       }
     }
+
+    "should play stream" {
+      forAll(allVersions()) { version ->
+        val payload = PlayStreamResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("mid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.playStream("0", "0", "0", "0", "foo"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/play/stream/0/0/0?name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayStreamResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing name" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/play/stream/0/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }
 
@@ -1526,7 +1559,7 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
 
         `when`(heosClient.search("0", 0, "*", IntRange(0, 10))).thenReturn(payload)
         val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", 
+            serviceHelper.request("GET", path(version, "",
                 "/search/0/0?search_string=*&range=0,10")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
