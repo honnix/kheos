@@ -856,11 +856,34 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
                 .add("name", "foo")
                 .build()))
 
-        `when`(heosClient.playStream("0", "0", "0", "0", "foo"))
+        `when`(heosClient.playStream("0", "0", "0", "foo", "0"))
             .thenReturn(payload)
         val response = awaitResponse(
             serviceHelper.request("POST", path(version, basePath,
                 "/0/play/stream/0/0/0?name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayStreamResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should play stream without cid" {
+      forAll(allVersions()) { version ->
+        val payload = PlayStreamResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("mid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.playStream("0", "0", "0", "foo"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/play/stream/0/_/0?name=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
         response.payload().isPresent shouldBe true
         JSON.deserialize<PlayStreamResponse>(

@@ -47,6 +47,8 @@ interface HeosClient : Closeable {
 
     val DEFAULT_RANGE = IntRange.EMPTY
 
+    val DEFAULT_CID = ""
+
     val DEFAULT_MID = ""
 
     val DEFAULT_SPID = ""
@@ -146,7 +148,8 @@ interface HeosClient : Closeable {
 
   fun search(sid: String, scid: Int, search: String, range: IntRange = DEFAULT_RANGE): SearchResponse
 
-  fun playStream(pid: String, sid: String, cid: String, mid: String, name: String): PlayStreamResponse
+  fun playStream(pid: String, sid: String, mid: String, name: String, cid: String = DEFAULT_CID)
+      : PlayStreamResponse
 
   fun playInput(pid: String, mid: String = DEFAULT_MID, spid: String = DEFAULT_SPID,
                 input: String = DEFAULT_INPUT): PlayInputResponse
@@ -539,13 +542,13 @@ internal class HeosClientImpl(host: String,
             .build())
   }
 
-  override fun playStream(pid: String, sid: String, cid: String, mid: String, name: String)
+  override fun playStream(pid: String, sid: String, mid: String, name: String, cid: String)
       : PlayStreamResponse =
       sendCommand(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
           AttributesBuilder()
               .add("pid", pid)
               .add("sid", sid)
-              .add("cid", cid)
+              .add("cid", cid::isNotEmpty, { cid })
               .add("mid", mid)
               .add("name", name)
               .build())

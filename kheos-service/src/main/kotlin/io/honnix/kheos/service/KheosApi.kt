@@ -407,7 +407,7 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
       = callAndBuildResponse({ heosClient.reconnect() }) {
     val name = rc.request().parameter("name")
         .orElseThrow({ IllegalArgumentException("missing name") })
-    heosClient.playStream(pid, sid, cid, mid, name)
+    heosClient.playStream(pid, sid, mid, name, if (cid == "_") HeosClient.DEFAULT_CID else cid)
   }
 
   private fun playInput(pid: String, rc: RequestContext)
