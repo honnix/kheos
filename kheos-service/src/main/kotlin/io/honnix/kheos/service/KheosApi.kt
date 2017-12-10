@@ -412,6 +412,10 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
 
   private fun playInput(pid: String, rc: RequestContext)
       = callAndBuildResponse({ heosClient.reconnect() }) {
+    if (rc.request().parameters().isEmpty()) {
+      throw IllegalArgumentException("neither mid, spid nor input is provided")
+    }
+
     val mid = rc.request().parameter("mid").orElse(HeosClient.DEFAULT_MID)
     val spid = rc.request().parameter("spid").orElse(HeosClient.DEFAULT_SPID)
     val input = rc.request().parameter("input").orElse(HeosClient.DEFAULT_INPUT)

@@ -920,6 +920,15 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
             response.payload().get().toByteArray()) shouldBe payload
       }
     }
+
+    "should return client error if no query parameter" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, basePath, "/0/play/input")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }
 
