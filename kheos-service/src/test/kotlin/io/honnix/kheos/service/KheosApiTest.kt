@@ -876,6 +876,50 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should play input" {
+      forAll(allVersions()) { version ->
+        val payload = PlayInputResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("mid", "0")
+                .add("spid", "0")
+                .add("input", "inputs/aux_in_1")
+                .build()))
+
+        `when`(heosClient.playInput("0", "0", "0", "inputs/aux_in_1"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/play/input?mid=0&spid=0&input=inputs%2Faux_in_1")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayInputResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should play input from specified input" {
+      forAll(allVersions()) { version ->
+        val payload = PlayInputResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("input", "inputs/aux_in_1")
+                .build()))
+
+        `when`(heosClient.playInput("0", input = "inputs/aux_in_1"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, basePath,
+                "/0/play/input?input=inputs%2Faux_in_1")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayInputResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
   }
 }
 

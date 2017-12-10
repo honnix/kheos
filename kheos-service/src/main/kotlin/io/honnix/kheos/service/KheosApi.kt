@@ -234,7 +234,11 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
                   it.pathArgs().getValue("cid"),
                   it.pathArgs().getValue("mid"),
                   it)
-            })
+            }),
+        Route.with(
+            em.serializerResponse(PlayInputResponse::class.java),
+            "POST", "$base/<pid>/play/input",
+            SyncHandler { playInput(it.pathArgs().getValue("pid"), it) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -404,6 +408,14 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     val name = rc.request().parameter("name")
         .orElseThrow({ IllegalArgumentException("missing name") })
     heosClient.playStream(pid, sid, cid, mid, name)
+  }
+
+  private fun playInput(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val mid = rc.request().parameter("mid").orElse(HeosClient.DEFAULT_MID)
+    val spid = rc.request().parameter("spid").orElse(HeosClient.DEFAULT_SPID)
+    val input = rc.request().parameter("input").orElse(HeosClient.DEFAULT_INPUT)
+    heosClient.playInput(pid, mid, spid, input)
   }
 }
 
