@@ -250,6 +250,10 @@ enum class AddCriteriaId(val id: Int) {
   ADD_TO_END(3),
   REPLACE_AND_PLAY(4);
 
+  companion object {
+    fun from(id: Int) = AddCriteriaId.values().find { x -> x.id == id} ?: UNKNOWN
+  }
+
   override fun toString() = id.toString()
 }
 

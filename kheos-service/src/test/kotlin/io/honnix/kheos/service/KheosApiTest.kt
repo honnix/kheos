@@ -952,6 +952,80 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
+
+    "should add container to queue" {
+      forAll(allVersions()) { version ->
+        val payload = AddToQueueResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("aid", 3)
+                .build()))
+
+        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT", path(version, basePath,
+                "/0/queue/0/0?criteria_id=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<AddToQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should add track to queue" {
+      forAll(allVersions()) { version ->
+        val payload = AddToQueueResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("mid", 0)
+                .add("aid", 3)
+                .build()))
+
+        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END, "0"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT", path(version, basePath,
+                "/0/queue/0/0/0?criteria_id=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<AddToQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, basePath, "/0/queue/0/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, basePath, "/0/queue/0/0/0?criteria_id=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if unknown criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, basePath, "/0/queue/0/0/0?criteria_id=100")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
   }
 }
 

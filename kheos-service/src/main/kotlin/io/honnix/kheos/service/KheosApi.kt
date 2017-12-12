@@ -200,6 +200,25 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
               playQueue(it.pathArgs().getValue("pid"), it.pathArgs().getValue("qid"))
             }),
         Route.with(
+            em.serializerResponse(AddToQueueResponse::class.java),
+            "PUT", "$base/<pid>/queue/<sid>/<cid>",
+            SyncHandler {
+              addContainerToQueue(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it)
+            }),
+        Route.with(
+            em.serializerResponse(AddToQueueResponse::class.java),
+            "PUT", "$base/<pid>/queue/<sid>/<cid>/<mid>",
+            SyncHandler {
+              addTrackToQueue(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it.pathArgs().getValue("mid"),
+                  it)
+            }),
+        Route.with(
             em.serializerResponse(GenericResponse::class.java),
             "DELETE", "$base/<pid>/queue/<qid>",
             SyncHandler {
@@ -420,6 +439,26 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
     val spid = rc.request().parameter("spid").orElse(HeosClient.DEFAULT_SPID)
     val input = rc.request().parameter("input").orElse(HeosClient.DEFAULT_INPUT)
     heosClient.playInput(pid, mid, spid, input)
+  }
+
+  private fun getCriteriaId(rc: RequestContext) = rc.request().parameter("criteria_id")
+      .map { criteriaId ->
+        Try.of { AddCriteriaId.from(criteriaId.toInt()) }
+            .filter { it != AddCriteriaId.UNKNOWN }
+            .getOrElseThrow(Supplier { IllegalArgumentException("invalid criteria_id") })
+      }
+      .orElseThrow({ IllegalArgumentException("missing criteria_id") })
+
+  private fun addContainerToQueue(pid: String, sid: String,
+                                  cid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc))
+  }
+
+  private fun addTrackToQueue(pid: String, sid: String,
+                              cid: String, mid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc), mid)
   }
 }
 
