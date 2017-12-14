@@ -200,25 +200,6 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
               playQueue(it.pathArgs().getValue("pid"), it.pathArgs().getValue("qid"))
             }),
         Route.with(
-            em.serializerResponse(AddToQueueResponse::class.java),
-            "PUT", "$base/<pid>/queue/<sid>/<cid>",
-            SyncHandler {
-              addContainerToQueue(it.pathArgs().getValue("pid"),
-                  it.pathArgs().getValue("sid"),
-                  it.pathArgs().getValue("cid"),
-                  it)
-            }),
-        Route.with(
-            em.serializerResponse(AddToQueueResponse::class.java),
-            "PUT", "$base/<pid>/queue/<sid>/<cid>/<mid>",
-            SyncHandler {
-              addTrackToQueue(it.pathArgs().getValue("pid"),
-                  it.pathArgs().getValue("sid"),
-                  it.pathArgs().getValue("cid"),
-                  it.pathArgs().getValue("mid"),
-                  it)
-            }),
-        Route.with(
             em.serializerResponse(GenericResponse::class.java),
             "DELETE", "$base/<pid>/queue/<qid>",
             SyncHandler {
@@ -243,21 +224,7 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
         Route.with(
             em.serializerResponse(PlayPreviousResponse::class.java),
             "POST", "$base/<pid>/play/previous",
-            SyncHandler { playPrevious(it.pathArgs().getValue("pid")) }),
-        Route.with(
-            em.serializerResponse(PlayStreamResponse::class.java),
-            "POST", "$base/<pid>/play/stream/<sid>/<cid>/<mid>",
-            SyncHandler {
-              playStream(it.pathArgs().getValue("pid"),
-                  it.pathArgs().getValue("sid"),
-                  it.pathArgs().getValue("cid"),
-                  it.pathArgs().getValue("mid"),
-                  it)
-            }),
-        Route.with(
-            em.serializerResponse(PlayInputResponse::class.java),
-            "POST", "$base/<pid>/play/input",
-            SyncHandler { playInput(it.pathArgs().getValue("pid"), it) })
+            SyncHandler { playPrevious(it.pathArgs().getValue("pid")) })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
     return Api.prefixRoutes(routes, Api.Version.V0)
@@ -420,45 +387,6 @@ class HeosPlayerCommandResource(private val heosClient: HeosClient) {
 
   private fun playPrevious(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
     heosClient.playPrevious(pid)
-  }
-
-  private fun playStream(pid: String, sid: String, cid: String, mid: String, rc: RequestContext)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
-    val name = rc.request().parameter("name")
-        .orElseThrow({ IllegalArgumentException("missing name") })
-    heosClient.playStream(pid, sid, mid, name, if (cid == "_") HeosClient.DEFAULT_CID else cid)
-  }
-
-  private fun playInput(pid: String, rc: RequestContext)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
-    if (rc.request().parameters().isEmpty()) {
-      throw IllegalArgumentException("neither mid, spid nor input is provided")
-    }
-
-    val mid = rc.request().parameter("mid").orElse(HeosClient.DEFAULT_MID)
-    val spid = rc.request().parameter("spid").orElse(HeosClient.DEFAULT_SPID)
-    val input = rc.request().parameter("input").orElse(HeosClient.DEFAULT_INPUT)
-    heosClient.playInput(pid, mid, spid, input)
-  }
-
-  private fun getCriteriaId(rc: RequestContext) = rc.request().parameter("criteria_id")
-      .map { criteriaId ->
-        Try.of { AddCriteriaId.from(criteriaId.toInt()) }
-            .filter { it != AddCriteriaId.UNKNOWN }
-            .getOrElseThrow(Supplier { IllegalArgumentException("invalid criteria_id") })
-      }
-      .orElseThrow({ IllegalArgumentException("missing criteria_id") })
-
-  private fun addContainerToQueue(pid: String, sid: String,
-                                  cid: String, rc: RequestContext)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
-    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc))
-  }
-
-  private fun addTrackToQueue(pid: String, sid: String,
-                              cid: String, mid: String, rc: RequestContext)
-      = callAndBuildResponse({ heosClient.reconnect() }) {
-    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc), mid)
   }
 }
 
@@ -636,6 +564,71 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
               search(it.pathArgs().getValue("sid"),
                   it.pathArgs().getValue("scid"),
                   it)
+            }),
+        Route.with(
+            em.serializerResponse(PlayStreamResponse::class.java),
+            "POST", "/players/<pid>/play/stream/<sid>/<cid>/<mid>",
+            SyncHandler {
+              playStream(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it.pathArgs().getValue("mid"),
+                  it)
+            }),
+        Route.with(
+            em.serializerResponse(PlayInputResponse::class.java),
+            "POST", "/players/<pid>/play/input",
+            SyncHandler { playInput(it.pathArgs().getValue("pid"), it) }),
+        Route.with(
+            em.serializerResponse(AddToQueueResponse::class.java),
+            "PUT", "/players/<pid>/queue/<sid>/<cid>",
+            SyncHandler {
+              addContainerToQueue(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it)
+            }),
+        Route.with(
+            em.serializerResponse(AddToQueueResponse::class.java),
+            "PUT", "/players/<pid>/queue/<sid>/<cid>/<mid>",
+            SyncHandler {
+              addTrackToQueue(it.pathArgs().getValue("pid"),
+                  it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it.pathArgs().getValue("mid"),
+                  it)
+            }),
+        Route.with(
+            em.serializerResponse(RenamePlaylistResponse::class.java),
+            "PUT", "/playlists/<sid>/<cid>",
+            SyncHandler {
+              renamePlaylist(it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"),
+                  it)
+            }),
+        Route.with(
+            em.serializerResponse(DeletePlaylistResponse::class.java),
+            "DELETE", "/playlists/<sid>/<cid>",
+            SyncHandler {
+              deletePlaylist(it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"))
+            }),
+        Route.with(
+            em.serializerResponse(RetrieveMetadataResponse::class.java),
+            "GET", "/metadata/<sid>/<cid>",
+            SyncHandler {
+              retrieveMetadata(it.pathArgs().getValue("sid"),
+                  it.pathArgs().getValue("cid"))
+            }),
+        Route.with(
+            em.serializerResponse(GetServiceOptionsResponse::class.java),
+            "GET", "/service_options",
+            SyncHandler { getServiceOptions() }),
+        Route.with(
+            em.serializerResponse(SetServiceOptionResponse::class.java),
+            "PATCH", "/service_options/<option_id>",
+            SyncHandler {
+              setServiceOption(it.pathArgs().getValue("option_id"), it)
             })
     ).map { r -> r.withMiddleware { Middleware.syncToAsync(it) } }
 
@@ -721,4 +714,91 @@ class HeosBrowseCommandResource(private val heosClient: HeosClient) {
 
         heosClient.search(sid, scidInt, searchString, range)
       }
+
+  private fun playStream(pid: String, sid: String, cid: String, mid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val name = rc.request().parameter("name")
+        .orElseThrow({ IllegalArgumentException("missing name") })
+    heosClient.playStream(pid, sid, mid, name, if (cid == "_") HeosClient.DEFAULT_CID else cid)
+  }
+
+  private fun playInput(pid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    if (rc.request().parameters().isEmpty()) {
+      throw IllegalArgumentException("neither mid, spid nor input is provided")
+    }
+
+    val mid = rc.request().parameter("mid").orElse(HeosClient.DEFAULT_MID)
+    val spid = rc.request().parameter("spid").orElse(HeosClient.DEFAULT_SPID)
+    val input = rc.request().parameter("input").orElse(HeosClient.DEFAULT_INPUT)
+    heosClient.playInput(pid, mid, spid, input)
+  }
+
+  private fun getCriteriaId(rc: RequestContext) = rc.request().parameter("criteria_id")
+      .map { criteriaId ->
+        Try.of { AddCriteriaId.from(criteriaId.toInt()) }
+            .filter { it != AddCriteriaId.UNKNOWN }
+            .getOrElseThrow(Supplier { IllegalArgumentException("invalid criteria_id") })
+      }
+      .orElseThrow({ IllegalArgumentException("missing criteria_id") })
+
+  private fun addContainerToQueue(pid: String, sid: String,
+                                  cid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc))
+  }
+
+  private fun addTrackToQueue(pid: String, sid: String,
+                              cid: String, mid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.addToQueue(pid, sid, cid, getCriteriaId(rc), mid)
+  }
+
+  private fun renamePlaylist(sid: String, cid: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val name = rc.request().parameter("name")
+        .orElseThrow { IllegalArgumentException("missing name") }
+    heosClient.renamePlaylist(sid, cid, name)
+  }
+
+  private fun deletePlaylist(sid: String, cid: String)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.deletePlaylist(sid, cid)
+  }
+
+  private fun retrieveMetadata(sid: String, cid: String)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.retrieveMetadata(sid, cid)
+  }
+
+  private fun getServiceOptions()
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getServiceOptions()
+  }
+
+  private fun setServiceOption(optionId: String, rc: RequestContext)
+      = callAndBuildResponse({ heosClient.reconnect() }) {
+    val optionIdInt = Try.of {
+      optionId.toInt()
+    }.getOrElseThrow(Supplier {
+      IllegalArgumentException("option_id should be an integer")
+    })
+
+    val range = rc.request().parameter("range")
+        .map { range ->
+          Try.of {
+            val (start, end) = range.split(",").map { it.trim().toInt() }
+            IntRange(start, end)
+          }.getOrElseThrow(Supplier {
+            IllegalArgumentException("range should be of format `start,end`")
+          })
+        }
+        .orElse(HeosClient.DEFAULT_RANGE)
+
+    heosClient.setServiceOption(Option(optionIdInt),
+        AttributesBuilder()
+            .add(rc.request().parameters().filter { it.key != "range" })
+            .build(),
+        range)
+  }
 }
