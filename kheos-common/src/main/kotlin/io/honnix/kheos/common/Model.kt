@@ -251,7 +251,7 @@ enum class AddCriteriaId(val id: Int) {
   REPLACE_AND_PLAY(4);
 
   companion object {
-    fun from(id: Int) = AddCriteriaId.values().find { x -> x.id == id} ?: UNKNOWN
+    fun from(id: Int) = AddCriteriaId.values().find { x -> x.id == id } ?: UNKNOWN
   }
 
   override fun toString() = id.toString()
@@ -302,6 +302,11 @@ data class Message(private val content: Map<String, List<String>>) {
       return this
     }
 
+    fun add(map: Map<String, List<String>>): Builder {
+      map.entries.forEach { add(it.key, it.value) }
+      return this
+    }
+
     fun build() = Message(map.toMap())
   }
 
@@ -331,7 +336,7 @@ typealias Attributes = Message
 typealias AttributesBuilder = Message.Builder
 typealias Options = List<Map<String, List<Option>>>
 
-data class Option(val id: Int, val name: String) {
+data class Option(val id: Int, val name: String = "") {
   companion object {
     val ADD_TRACK_TO_LIBRARY = Option(1, "Add Track to Library")
 

@@ -621,9 +621,7 @@ internal class HeosClientImpl(host: String,
 interface ChangeEventListener {
   fun onEvent(event: ChangeEvent)
 
-  fun onException(exception: IOException) {
-
-  }
+  fun onException(exception: IOException) {}
 }
 
 interface HeosChangeEventsClient : Closeable {
@@ -663,7 +661,7 @@ internal class HeosChangeEventsClientImpl(host: String,
 
     output.printf("${mkCommand(GroupedCommand(SYSTEM, REGISTER_FOR_CHANGE_EVENTS),
         AttributesBuilder()
-            .add("enable", "on")
+            .add("enable", RegisterChangeEvents.ON)
             .build())}$COMMAND_DELIMITER")
 
     val rawResponse = input.readLine()

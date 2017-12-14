@@ -843,189 +843,6 @@ internal class HeosPlayerCommandResourceTest : StringSpec() {
             response.payload().get().toByteArray()) shouldBe payload
       }
     }
-
-    "should play stream" {
-      forAll(allVersions()) { version ->
-        val payload = PlayStreamResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("mid", "0")
-                .add("name", "foo")
-                .build()))
-
-        `when`(heosClient.playStream("0", "0", "0", "foo", "0"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/play/stream/0/0/0?name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayStreamResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should play stream without cid" {
-      forAll(allVersions()) { version ->
-        val payload = PlayStreamResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("mid", "0")
-                .add("name", "foo")
-                .build()))
-
-        `when`(heosClient.playStream("0", "0", "0", "foo"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/play/stream/0/_/0?name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayStreamResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should return client error if missing name" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/play/stream/0/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
-
-    "should play input" {
-      forAll(allVersions()) { version ->
-        val payload = PlayInputResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("mid", "0")
-                .add("spid", "0")
-                .add("input", "inputs/aux_in_1")
-                .build()))
-
-        `when`(heosClient.playInput("0", "0", "0", "inputs/aux_in_1"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/play/input?mid=0&spid=0&input=inputs%2Faux_in_1")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayInputResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should play input from specified input" {
-      forAll(allVersions()) { version ->
-        val payload = PlayInputResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("input", "inputs/aux_in_1")
-                .build()))
-
-        `when`(heosClient.playInput("0", input = "inputs/aux_in_1"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/play/input?input=inputs%2Faux_in_1")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayInputResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should return client error if no query parameter" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/play/input")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
-
-    "should add container to queue" {
-      forAll(allVersions()) { version ->
-        val payload = AddToQueueResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("aid", 3)
-                .build()))
-
-        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT", path(version, basePath,
-                "/0/queue/0/0?criteria_id=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<AddToQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should add track to queue" {
-      forAll(allVersions()) { version ->
-        val payload = AddToQueueResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("mid", 0)
-                .add("aid", 3)
-                .build()))
-
-        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END, "0"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT", path(version, basePath,
-                "/0/queue/0/0/0?criteria_id=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<AddToQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
-
-    "should return client error if missing criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, basePath, "/0/queue/0/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
-
-    "should return client error if invalid criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, basePath, "/0/queue/0/0/0?criteria_id=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
-
-    "should return client error if unknown criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, basePath, "/0/queue/0/0/0?criteria_id=100")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
   }
 }
 
@@ -1777,6 +1594,352 @@ internal class HeosBrowseCommandResourceTest : StringSpec() {
         val response = awaitResponse(
             serviceHelper.request("GET",
                 path(version, "", "/search/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should play stream" {
+      forAll(allVersions()) { version ->
+        val payload = PlayStreamResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("mid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.playStream("0", "0", "0", "foo", "0"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, "",
+                "/players/0/play/stream/0/0/0?name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayStreamResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should play stream without cid" {
+      forAll(allVersions()) { version ->
+        val payload = PlayStreamResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("mid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.playStream("0", "0", "0", "foo"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, "",
+                "/players/0/play/stream/0/_/0?name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayStreamResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing name" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, "", "/players/0/play/stream/0/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should play input" {
+      forAll(allVersions()) { version ->
+        val payload = PlayInputResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("mid", "0")
+                .add("spid", "0")
+                .add("input", "inputs/aux_in_1")
+                .build()))
+
+        `when`(heosClient.playInput("0", "0", "0", "inputs/aux_in_1"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, "",
+                "/players/0/play/input?mid=0&spid=0&input=inputs%2Faux_in_1")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayInputResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should play input from specified input" {
+      forAll(allVersions()) { version ->
+        val payload = PlayInputResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("input", "inputs/aux_in_1")
+                .build()))
+
+        `when`(heosClient.playInput("0", input = "inputs/aux_in_1"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("POST", path(version, "",
+                "/players/0/play/input?input=inputs%2Faux_in_1")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<PlayInputResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if no query parameter" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("POST",
+                path(version, "", "/players/0/play/input")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should add container to queue" {
+      forAll(allVersions()) { version ->
+        val payload = AddToQueueResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("aid", 3)
+                .build()))
+
+        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT", path(version, "",
+                "/players/0/queue/0/0?criteria_id=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<AddToQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should add track to queue" {
+      forAll(allVersions()) { version ->
+        val payload = AddToQueueResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
+                Result.SUCCESS, Message.Builder()
+                .add("pid", "0")
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("mid", 0)
+                .add("aid", 3)
+                .build()))
+
+        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END, "0"))
+            .thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT", path(version, "",
+                "/players/0/queue/0/0/0?criteria_id=3")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<AddToQueueResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, "", "/players/0/queue/0/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, "", "/players/0/queue/0/0/0?criteria_id=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if unknown criteria_id" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, "", "/players/0/queue/0/0/0?criteria_id=100")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should rename playlist" {
+      forAll(allVersions()) { version ->
+        val payload = RenamePlaylistResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.renamePlaylist("0", "0", "foo")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PUT", path(version, "",
+                "/playlists/0/0?name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<RenamePlaylistResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if missing name" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PUT",
+                path(version, "", "/playlists/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should delete playlist" {
+      forAll(allVersions()) { version ->
+        val payload = DeletePlaylistResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("cid", "0")
+                .build()))
+
+        `when`(heosClient.deletePlaylist("0", "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("DELETE", path(version, "", "/playlists/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<DeletePlaylistResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should retrieve metadata" {
+      forAll(allVersions()) { version ->
+        val payload = RetrieveMetadataResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
+                Result.SUCCESS, Message.Builder()
+                .add("sid", "0")
+                .add("cid", "0")
+                .add("returned", 2)
+                .add("count", 2)
+                .build()),
+            listOf(io.honnix.kheos.common.Metadata("0", listOf(
+                Image(URL("http://example.com"), 10.0),
+                Image(URL("http://example.com"), 12.0)))))
+
+        `when`(heosClient.retrieveMetadata("0", "0")).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, "", "/metadata/0/0")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<RetrieveMetadataResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should get service options" {
+      forAll(allVersions()) { version ->
+        val payload = GetServiceOptionsResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS),
+                Result.SUCCESS, Message()),
+            listOf(mapOf("play" to
+                listOf(
+                    Option.THUMBS_UP,
+                    Option.THUMBS_DOWN))))
+
+        `when`(heosClient.getServiceOptions()).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("GET", path(version, "", "/service_options")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<GetServiceOptionsResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set service option" {
+      forAll(allVersions()) { version ->
+        val payload = SetServiceOptionResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
+                Result.SUCCESS, Message.Builder()
+                .add("option", Option.CREATE_NEW_STATION.id)
+                .add("sid", "0")
+                .add("name", "foo")
+                .add("range", "1,10")
+                .build()))
+
+        `when`(heosClient.setServiceOption(Option(Option.CREATE_NEW_STATION.id),
+            AttributesBuilder()
+                .add("sid", "0")
+                .add("name", "foo")
+                .build(),
+            IntRange(1, 10))).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, "",
+                "/service_options/13?sid=0&name=foo&range=1,10")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetServiceOptionResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should set service option with default range" {
+      forAll(allVersions()) { version ->
+        val payload = SetServiceOptionResponse(
+            Heos(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
+                Result.SUCCESS, Message.Builder()
+                .add("option", Option.CREATE_NEW_STATION.id)
+                .add("sid", "0")
+                .add("name", "foo")
+                .build()))
+
+        `when`(heosClient.setServiceOption(Option(Option.CREATE_NEW_STATION.id),
+            AttributesBuilder()
+                .add("sid", "0")
+                .add("name", "foo")
+                .build())).thenReturn(payload)
+        val response = awaitResponse(
+            serviceHelper.request("PATCH", path(version, "",
+                "/service_options/13?sid=0&name=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
+        response.payload().isPresent shouldBe true
+        JSON.deserialize<SetServiceOptionResponse>(
+            response.payload().get().toByteArray()) shouldBe payload
+      }
+    }
+
+    "should return client error if invalid range" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, "", "/service_options/13?sid=0&name=foo&range=foo")))
+        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
+      }
+    }
+
+    "should return client error if invalid option" {
+      forAll(allVersions()) { version ->
+        val response = awaitResponse(
+            serviceHelper.request("PATCH",
+                path(version, "", "/service_options/foo?sid=0&name=foo")))
         assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
       }
     }
