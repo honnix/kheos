@@ -986,7 +986,7 @@ internal class HeosGroupCommandResourceTest : StringSpec() {
         val payload = GetVolumeResponse(
             Heos(GroupedCommand(GROUP, GET_VOLUME),
                 Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
+                .add("gid", "0")
                 .add("level", "10")
                 .build()))
 

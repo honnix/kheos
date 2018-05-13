@@ -414,8 +414,8 @@ class HeosGroupCommandResource(private val heosClient: HeosClient) {
             SyncHandler { deleteGroup(it) }),
         Route.with(
             em.serializerResponse(GetVolumeResponse::class.java),
-            "GET", "$base/<pid>/volume",
-            SyncHandler { getVolume(it.pathArgs().getValue("pid")) }),
+            "GET", "$base/<gid>/volume",
+            SyncHandler { getVolume(it.pathArgs().getValue("gid")) }),
         Route.with(
             em.serializerResponse(SetVolumeResponse::class.java),
             "PATCH", "$base/<gid>/volume",
@@ -466,8 +466,8 @@ class HeosGroupCommandResource(private val heosClient: HeosClient) {
     heosClient.deleteGroup(leaderId)
   }
 
-  private fun getVolume(pid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
-    heosClient.getVolume(CommandGroup.GROUP, pid)
+  private fun getVolume(gid: String) = callAndBuildResponse({ heosClient.reconnect() }) {
+    heosClient.getVolume(CommandGroup.GROUP, gid)
   }
 
   private fun setVolume(pid: String, rc: RequestContext)
