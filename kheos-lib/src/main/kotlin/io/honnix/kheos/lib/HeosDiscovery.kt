@@ -18,11 +18,13 @@
 
 package io.honnix.kheos.lib
 
-import org.fourthline.cling.*
+import org.fourthline.cling.UpnpService
+import org.fourthline.cling.UpnpServiceImpl
 import org.fourthline.cling.model.message.header.DeviceTypeHeader
 import org.fourthline.cling.model.meta.RemoteDevice
 import org.fourthline.cling.model.types.DeviceType
-import org.fourthline.cling.registry.*
+import org.fourthline.cling.registry.DefaultRegistryListener
+import org.fourthline.cling.registry.Registry
 import org.slf4j.LoggerFactory
 import java.io.Closeable
 

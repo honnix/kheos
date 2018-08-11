@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.honnix.kheos.proto.event.v1";
+option java_outer_classname = "KheosProtoevent";
+option objc_class_prefix = "KHEOS";
+
+package kheos.proto.event.v1;
+
+import "base.proto";
+
+message RegisterForChangeEventsResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message ChangeEventResponse {
+    message ChangeEvent {
+        enum ChangeEventCommand {
+            UNUSED_CHANGE_EVENT_COMMAND = 0;
+            player_now_playing_progress = 1;
+            player_now_playing_changed = 2;
+            player_state_changed = 3;
+            player_queue_changed = 4;
+            player_volume_changed = 5;
+            player_mute_changed = 6;
+            repeat_mode_changed = 7;
+            shuffle_mode_changed = 8;
+            group_changed = 9;
+            group_volume_changed = 10;
+            group_mute_changed = 11;
+            user_changed = 12;
+        }
+
+        ChangeEventCommand command = 1;
+        string message = 2;
+    }
+
+    ChangeEvent heos = 1;
+}

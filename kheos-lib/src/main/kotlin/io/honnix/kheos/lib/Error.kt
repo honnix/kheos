@@ -25,6 +25,12 @@ data class HeosCommandException(val eid: ErrorId, val text: String) :
     fun build(message: Message) =
         HeosCommandException(ErrorId.from(message.intValue("eid")),
             message.value("text") ?: "no error message")
+
+    fun build(message: String): HeosCommandException {
+      val msg = Message.from(message)
+      return HeosCommandException(ErrorId.from(msg.intValue("eid")),
+          msg.value("text") ?: "no error message")
+    }
   }
 }
 

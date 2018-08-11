@@ -17,14 +17,17 @@
  */
 package io.honnix.kheos.lib
 
-import io.kotlintest.matchers.*
-import io.kotlintest.mock.*
+import io.kotlintest.matchers.shouldBe
+import io.kotlintest.matchers.shouldNotBe
+import io.kotlintest.mock.`when`
+import io.kotlintest.mock.mock
 import io.kotlintest.specs.StringSpec
 import org.fourthline.cling.UpnpService
 import org.fourthline.cling.controlpoint.ControlPoint
 import org.fourthline.cling.model.message.header.DeviceTypeHeader
 import org.fourthline.cling.model.meta.RemoteDevice
-import org.fourthline.cling.registry.*
+import org.fourthline.cling.registry.Registry
+import org.fourthline.cling.registry.RegistryListener
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 

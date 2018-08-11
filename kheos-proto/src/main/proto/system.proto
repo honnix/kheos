@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.honnix.kheos.proto.system.v1";
+option java_outer_classname = "KheosProtoSystem";
+option objc_class_prefix = "KHEOS";
+
+package kheos.proto.system.v1;
+
+import "base.proto";
+
+message HeartbeatResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message SignInRequest {
+    string user_name = 1;
+    string password = 2;
+}
+
+message SignInResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message CheckAccountResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message SignOutResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message RebootResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+service SystemService {
+    rpc CheckAccount (.kheos.proto.base.v1.Empty) returns (CheckAccountResponse) {
+    }
+
+    rpc SignIn (SignInRequest) returns (SignInResponse) {
+    }
+
+    rpc SignOut (.kheos.proto.base.v1.Empty) returns (SignOutResponse) {
+    }
+
+    rpc Reboot (.kheos.proto.base.v1.Empty) returns (RebootResponse) {
+    }
+}

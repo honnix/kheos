@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.honnix.kheos.proto.group.v1";
+option java_outer_classname = "KheosProtoGroup";
+option objc_class_prefix = "KHEOS";
+
+package kheos.proto.group.v1;
+
+import "base.proto";
+
+message Group {
+    message Player {
+        enum Role {
+            leader = 0;
+            member = 1;
+        }
+
+        string name = 1;
+        string pid = 2;
+        Role role = 3;
+    }
+
+    string name = 1;
+    string gid = 2;
+    repeated Player players = 3;
+}
+
+message GetGroupsResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Group payload = 2;
+}
+
+message GetGroupInfoRequest {
+    string gid = 1;
+}
+
+message GetGroupInfoResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    Group payload = 2;
+}
+
+message SetGroupRequest {
+    string leader = 1;
+    repeated string members = 2;
+}
+
+message SetGroupResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message DeleteGroupRequest {
+    string leader = 1;
+}
+
+message DeleteGroupResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message GetVolumeRequest {
+    string gid = 1;
+}
+
+message SetVolumeRequest {
+    string gid = 1;
+    uint32 level = 2;
+}
+
+message VolumeUpRequest {
+    string gid = 1;
+    uint32 step = 2;
+}
+
+message VolumeDownRequest {
+    string gid = 1;
+    uint32 step = 2;
+}
+
+message GetMuteRequest {
+    string gid = 1;
+}
+
+message SetMuteRequest {
+    string gid = 1;
+    .kheos.proto.base.v1.MuteState.State state = 2;
+}
+
+message ToggleMuteRequest {
+    string gid = 1;
+}
+
+service GroupService {
+    rpc GetGroups (.kheos.proto.base.v1.Empty) returns (GetGroupsResponse) {
+    }
+
+    rpc GetGroupInfo (GetGroupInfoRequest) returns (GetGroupInfoResponse) {
+    }
+
+    rpc SetGroup (SetGroupRequest) returns (SetGroupResponse) {
+    }
+
+    rpc DeleteGroup (DeleteGroupRequest) returns (DeleteGroupResponse) {
+    }
+
+    rpc GetVolume (GetVolumeRequest) returns (.kheos.proto.base.v1.GetVolumeResponse) {
+    }
+
+    rpc SetVolume (SetVolumeRequest) returns (.kheos.proto.base.v1.SetVolumeResponse) {
+    }
+
+    rpc VolumeUp (VolumeUpRequest) returns (.kheos.proto.base.v1.VolumeUpResponse) {
+    }
+
+    rpc VolumeDown (VolumeDownRequest) returns (.kheos.proto.base.v1.VolumeDownResponse) {
+    }
+
+    rpc GetMute (GetMuteRequest) returns (.kheos.proto.base.v1.GetMuteResponse) {
+    }
+
+    rpc SetMute (SetMuteRequest) returns (.kheos.proto.base.v1.SetMuteResponse) {
+    }
+
+    rpc ToggleMute (ToggleMuteRequest) returns (.kheos.proto.base.v1.ToggleMuteResponse) {
+    }
+}

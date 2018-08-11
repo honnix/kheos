@@ -17,1931 +17,1678 @@
  */
 package io.honnix.kheos.service
 
-import com.spotify.apollo.*
-import com.spotify.apollo.test.ServiceHelper
-import com.spotify.apollo.test.unit.ResponseMatchers.hasStatus
-import com.spotify.apollo.test.unit.StatusTypeMatchers.belongsToFamily
-import io.honnix.kheos.common.*
-import io.honnix.kheos.common.Command.*
-import io.honnix.kheos.common.CommandGroup.*
-import io.honnix.kheos.common.MediaType.*
-import io.honnix.kheos.common.MusicSourceType.*
-import io.honnix.kheos.common.YesNo.*
-import io.honnix.kheos.lib.*
+import io.grpc.stub.StreamObserver
+import io.honnix.kheos.common.AttributesBuilder
+import io.honnix.kheos.common.CommandGroup
+import io.honnix.kheos.common.CommandGroup.GROUP
+import io.honnix.kheos.common.CommandGroup.PLAYER
+import io.honnix.kheos.lib.ErrorId
+import io.honnix.kheos.lib.HeosClient
+import io.honnix.kheos.lib.HeosClientException
+import io.honnix.kheos.lib.HeosCommandException
+import io.honnix.kheos.proto.base.v1.*
+import io.honnix.kheos.proto.browse.v1.*
+import io.honnix.kheos.proto.group.v1.*
+import io.honnix.kheos.proto.player.v1.*
+import io.honnix.kheos.proto.system.v1.*
+import io.kotlintest.Spec
 import io.kotlintest.matchers.shouldBe
-import io.kotlintest.mock.*
-import io.kotlintest.properties.*
+import io.kotlintest.mock.`when`
+import io.kotlintest.mock.mock
 import io.kotlintest.specs.StringSpec
-import okio.ByteString
-import org.hamcrest.MatcherAssert.assertThat
+import org.mockito.ArgumentCaptor
+import org.mockito.Mockito.timeout
 import org.mockito.Mockito.verify
-import java.net.URL
-import java.util.concurrent.*
-
-internal class ApiTest : StringSpec() {
-  init {
-    "should add correct prefix" {
-      val route1 = mock<KRoute>()
-      val route2 = mock<KRoute>()
-
-      Api.prefixRoutes(listOf(route1, route2), Api.Version.V0).size shouldBe 2
-      verify(route1).withPrefix("/api/v0")
-      verify(route2).withPrefix("/api/v0")
-    }
-  }
-}
+import java.util.concurrent.Executors
 
 internal class KheosApiKtTest : StringSpec() {
+  private val captor = ArgumentCaptor.forClass(io.grpc.StatusRuntimeException::class.java)
+
+  private val executor = Executors.newSingleThreadExecutor()
+
+  override fun interceptSpec(context: Spec, spec: () -> Unit) {
+    super.interceptSpec(context, spec)
+    executor.shutdownNow()
+  }
+
   init {
-    "should call and build success response" {
-      val payload = CheckAccountResponse(
-          Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
-              Result.SUCCESS, Message()))
-      val response = callAndBuildResponse {
+    "should callAndObserve and build success response" {
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      val payload = CheckAccountResponse.getDefaultInstance()
+      callAndObserve(executor, responseObserver) {
         payload
       }
-      assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-      response.payload().get() shouldBe payload
+      verify(responseObserver, timeout(1000)).onNext(payload)
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should call and build error response" {
-      val response = callAndBuildResponse {
-        throw HeosCommandException(ErrorId.INTERNAL_ERROR, "Internal error")
+    "should callAndObserve and build error response in case of IllegalArgumentException" {
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      val exception = IllegalArgumentException("Illegal argument")
+      callAndObserve(executor, responseObserver) {
+        throw exception
       }
-      assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SERVER_ERROR)))
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+      captor.value.status.cause shouldBe exception
+      captor.value.status.description shouldBe "Illegal argument"
     }
 
-    "should call and reconnect in case of HeosClientException" {
-      val response = callAndBuildResponse {
-        throw HeosClientException("forced failure")
+    "should callAndObserve and build error response in case of HeosCommandException" {
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      val exception = HeosCommandException(ErrorId.INTERNAL_ERROR, "Internal error")
+      callAndObserve(executor, responseObserver) {
+        throw exception
       }
-      assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SERVER_ERROR)))
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INTERNAL.code
+      captor.value.status.cause shouldBe exception
+      captor.value.status.description shouldBe "eid: INTERNAL_ERROR, text: Internal error"
+    }
+
+    "should callAndObserve and reconnect in case of HeosClientException" {
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      val exception = HeosClientException("Forced failure")
+      var retries = 0
+      callAndObserve(executor, responseObserver, { retries++ }) {
+        throw exception
+      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      retries shouldBe 3
+      captor.value.status.code shouldBe io.grpc.Status.INTERNAL.code
+      captor.value.status.cause shouldBe exception
+      captor.value.status.description shouldBe "Forced failure"
+    }
+
+    "should callAndObserve and build error response in case of other exception" {
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      val exception = Exception("Other error")
+      callAndObserve(executor, responseObserver) {
+        throw exception
+      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.UNKNOWN.code
+      captor.value.status.cause shouldBe exception
+      captor.value.status.description shouldBe "Other error"
     }
   }
 }
 
-internal fun awaitResponse(completionStage: CompletionStage<Response<ByteString>>) =
-    completionStage.toCompletableFuture().get(5, TimeUnit.SECONDS)
-
-internal fun path(version: Api.Version, basePath: String, path: String) =
-    version.prefix() + basePath + path
-
-internal fun allVersions() = table(
-    headers("version"),
-    row(Api.Version.V0)
-)
-
-internal class HeosSystemCommandResourceTest : StringSpec() {
-  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
-
-  private val basePath = "/system"
+internal class HeosSystemServiceTest : StringSpec() {
+  private val executor = Executors.newSingleThreadExecutor()
 
   private val heosClient = mock<HeosClient>()
 
-  private fun init(environment: Environment) {
-    environment.routingEngine()
-        .registerRoutes(HeosSystemCommandResource(heosClient).routes().stream())
+  private val heosSystemService = HeosSystemService(heosClient, executor)
+
+  private val captor = ArgumentCaptor.forClass(io.grpc.StatusRuntimeException::class.java)
+
+  override fun interceptSpec(context: Spec, spec: () -> Unit) {
+    super.interceptSpec(context, spec)
+    executor.shutdownNow()
   }
 
   init {
-    serviceHelper.start()
-    autoClose(serviceHelper)
-
     "should check account" {
-      forAll(allVersions()) { version ->
-        val payload = CheckAccountResponse(
-            Heos(GroupedCommand(SYSTEM, CHECK_ACCOUNT),
-                Result.SUCCESS, Message()))
-        `when`(heosClient.checkAccount()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/account")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<CheckAccountResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      val responseObserver = mock<StreamObserver<CheckAccountResponse>>()
+      `when`(heosClient.checkAccount()).thenReturn(CheckAccountResponse.getDefaultInstance())
+
+      heosSystemService.checkAccount(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(CheckAccountResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should sign in" {
-      forAll(allVersions()) { version ->
-        val payload = SignInResponse(
-            Heos(GroupedCommand(SYSTEM, SIGN_IN),
-                Result.SUCCESS, Message.Builder()
-                .add("signed_in")
-                .add("un", "user@example.com")
-                .build()))
-        `when`(heosClient.signIn("foo", "bar")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/account?user_name=foo&password=bar")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SignInResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      val responseObserver = mock<StreamObserver<SignInResponse>>()
+      `when`(heosClient.signIn("foo", "bar")).thenReturn(SignInResponse.getDefaultInstance())
+
+      heosSystemService.signIn(SignInRequest.newBuilder()
+          .setUserName("foo")
+          .setPassword("bar")
+          .build(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SignInResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should return client error if no user_name" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/account?password=bar")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      val responseObserver = mock<StreamObserver<SignInResponse>>()
+
+      heosSystemService.signIn(SignInRequest.newBuilder().setPassword("bar").build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should return client error if no password" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/account?user_name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+      val responseObserver = mock<StreamObserver<SignInResponse>>()
 
-    "should return client error if no user_name nor password" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/account")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosSystemService.signIn(SignInRequest.newBuilder().setUserName("foo").build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should sign out" {
-      forAll(allVersions()) { version ->
-        val payload = SignOutResponse(
-            Heos(GroupedCommand(SYSTEM, SIGN_OUT),
-                Result.SUCCESS, Message.Builder()
-                .add("signed_out")
-                .build()))
-        `when`(heosClient.signOut()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE",
-                path(version, basePath, "/account")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SignOutResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      val responseObserver = mock<StreamObserver<SignOutResponse>>()
+      `when`(heosClient.signOut()).thenReturn(SignOutResponse.getDefaultInstance())
+
+      heosSystemService.signOut(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SignOutResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should reboot" {
-      forAll(allVersions()) { version ->
-        val payload = RebootResponse(
-            Heos(GroupedCommand(SYSTEM, REBOOT),
-                Result.SUCCESS, Message()))
-        `when`(heosClient.reboot()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, basePath, "/state")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<RebootResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      val responseObserver = mock<StreamObserver<RebootResponse>>()
+      `when`(heosClient.reboot()).thenReturn(RebootResponse.getDefaultInstance())
+
+      heosSystemService.reboot(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(RebootResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
   }
 }
 
-internal class HeosPlayerCommandResourceTest : StringSpec() {
-  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
-
-  private val basePath = "/players"
+internal class HeosPlayerServiceTest : StringSpec() {
+  private val executor = Executors.newSingleThreadExecutor()
 
   private val heosClient = mock<HeosClient>()
 
-  private fun init(environment: Environment) {
-    environment.routingEngine()
-        .registerRoutes(HeosPlayerCommandResource(heosClient).routes().stream())
-  }
+  private val heosPlayerService = HeosPlayerService(heosClient, executor)
+
+  private val captor = ArgumentCaptor.forClass(io.grpc.StatusRuntimeException::class.java)
 
   init {
-    serviceHelper.start()
-    autoClose(serviceHelper)
-
     "should get players" {
-      forAll(allVersions()) { version ->
-        val payload = GetPlayersResponse(
-            Heos(GroupedCommand(PLAYER, GET_PLAYERS),
-                Result.SUCCESS, Message()),
-            listOf(
-                Player("name0", "0", "model0",
-                    "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE,
-                    "ADAG0000"),
-                Player("name1", "1", "model1",
-                    "0.1", "192.168.1.101", "wifi", Lineout.FIXED,
-                    "ADAG0000", "100", Control.NETWORK)))
+      val responseObserver = mock<StreamObserver<GetPlayersResponse>>()
+      `when`(heosClient.getPlayers()).thenReturn(GetPlayersResponse.getDefaultInstance())
 
-        `when`(heosClient.getPlayers()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetPlayersResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosPlayerService.getPlayers(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetPlayersResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should get player info" {
-      forAll(allVersions()) { version ->
-        val payload = GetPlayerInfoResponse(
-            Heos(GroupedCommand(PLAYER, GET_PLAYER_INFO),
-                Result.SUCCESS, Message()),
-            Player("name0", "0", "model0",
-                "0.0", "192.168.1.100", "wifi", Lineout.VARIABLE, "ADAG0000"))
+      val responseObserver = mock<StreamObserver<GetPlayerInfoResponse>>()
+      `when`(heosClient.getPlayerInfo("0")).thenReturn(GetPlayerInfoResponse.getDefaultInstance())
 
-        `when`(heosClient.getPlayerInfo("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetPlayerInfoResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosPlayerService.getPlayerInfo(GetPlayerInfoRequest.newBuilder().setPid("0").build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetPlayerInfoResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetPlayerInfoResponse>>()
+
+      heosPlayerService.getPlayerInfo(GetPlayerInfoRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get play state" {
-      forAll(allVersions()) { version ->
-        val payload = GetPlayStateResponse(
-            Heos(GroupedCommand(PLAYER, GET_PLAY_STATE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("state", "play")
-                .build()))
+      val responseObserver = mock<StreamObserver<GetPlayStateResponse>>()
+      `when`(heosClient.getPlayState("0")).thenReturn(GetPlayStateResponse.getDefaultInstance())
 
-        `when`(heosClient.getPlayState("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/0/state")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosPlayerService.getPlayState(GetPlayStateRequest.newBuilder().setPid("0").build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetPlayStateResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetPlayStateResponse>>()
+
+      heosPlayerService.getPlayState(GetPlayStateRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set play state" {
-      forAll(allVersions()) { version ->
-        val payload = SetPlayStateResponse(
-            Heos(GroupedCommand(PLAYER, SET_PLAY_STATE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("state", "play")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetPlayStateResponse>>()
+      `when`(heosClient.setPlayState("0", PlayState.State.PLAY))
+          .thenReturn(SetPlayStateResponse.getDefaultInstance())
 
-        `when`(heosClient.setPlayState("0", PlayState.PLAY)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/state?state=play")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetPlayStateResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosPlayerService.setPlayState(SetPlayStateRequest.newBuilder()
+          .setPid("0")
+          .setState(PlayState.State.PLAY)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetPlayStateResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if no state" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/state")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<SetPlayStateResponse>>()
 
-    "should return client error if invalid state" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/state?state=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosPlayerService.setPlayState(SetPlayStateRequest.newBuilder()
+          .setState(PlayState.State.PLAY)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get now playing media" {
-      forAll(allVersions()) { version ->
-        val payload = GetNowPlayingMediaResponse(
-            Heos(GroupedCommand(PLAYER, GET_NOW_PLAYING_MEDIA),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()),
-            NowPlayingMedia(STATION, "song", "album", "artist",
-                URL("http://example.com"), "0", "0", "0", "0",
-                "station"),
-            listOf(mapOf("play" to
-                listOf(Option.ADD_TO_HEOS_FAVORITES))))
+      val responseObserver = mock<StreamObserver<GetNowPlayingMediaResponse>>()
+      `when`(heosClient.getNowPlayingMedia("0"))
+          .thenReturn(GetNowPlayingMediaResponse.getDefaultInstance())
 
-        `when`(heosClient.getNowPlayingMedia("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/now_playing_media")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetNowPlayingMediaResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.getNowPlayingMedia(GetNowPlayingMediaRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetNowPlayingMediaResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetNowPlayingMediaResponse>>()
+
+      heosPlayerService.getNowPlayingMedia(GetNowPlayingMediaRequest.getDefaultInstance(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get volume" {
-      forAll(allVersions()) { version ->
-        val payload = GetVolumeResponse(
-            Heos(GroupedCommand(PLAYER, GET_VOLUME),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("level", "10")
-                .build()))
+      val responseObserver = mock<StreamObserver<GetVolumeResponse>>()
+      `when`(heosClient.getVolume(PLAYER, "0"))
+          .thenReturn(GetVolumeResponse.getDefaultInstance())
 
-        `when`(heosClient.getVolume(PLAYER, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/volume")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetVolumeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.getVolume(io.honnix.kheos.proto.player.v1.GetVolumeRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetVolumeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetVolumeResponse>>()
+
+      heosPlayerService.getVolume(
+          io.honnix.kheos.proto.player.v1.GetVolumeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set volume" {
-      forAll(allVersions()) { version ->
-        val payload = SetVolumeResponse(
-            Heos(GroupedCommand(PLAYER, SET_VOLUME),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("level", "10")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetVolumeResponse>>()
+      `when`(heosClient.setVolume(PLAYER, "0", 10))
+          .thenReturn(SetVolumeResponse.getDefaultInstance())
 
-        `when`(heosClient.setVolume(PLAYER, "0", 10)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/volume?level=10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetVolumeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.setVolume(io.honnix.kheos.proto.player.v1.SetVolumeRequest.newBuilder()
+          .setPid("0")
+          .setLevel(10)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetVolumeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if no level" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/volume")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<SetVolumeResponse>>()
 
-    "should return client error if level is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/volume?level=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosPlayerService.setVolume(
+          io.honnix.kheos.proto.player.v1.SetVolumeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should volume up" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeUpResponse(
-            Heos(GroupedCommand(PLAYER, VOLUME_UP),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "3")
-                .build()))
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
+      `when`(heosClient.volumeUp(PLAYER, "0", 3))
+          .thenReturn(VolumeUpResponse.getDefaultInstance())
 
-        `when`(heosClient.volumeUp(PLAYER, "0", 3)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/up?step=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeUpResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.volumeUp(io.honnix.kheos.proto.player.v1.VolumeUpRequest.newBuilder()
+          .setPid("0")
+          .setStep(3)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(VolumeUpResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should volume up with default step" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeUpResponse(
-            Heos(GroupedCommand(PLAYER, VOLUME_UP),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "5")
-                .build()))
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
 
-        `when`(heosClient.volumeUp(PLAYER, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/up")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeUpResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.volumeUp(
+          io.honnix.kheos.proto.player.v1.VolumeUpRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if step is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/volume/up?step=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if invalid step" {
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
+
+      heosPlayerService.volumeUp(io.honnix.kheos.proto.player.v1.VolumeUpRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should volume down" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeDownResponse(
-            Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "3")
-                .build()))
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
+      `when`(heosClient.volumeDown(PLAYER, "0", 3))
+          .thenReturn(VolumeDownResponse.getDefaultInstance())
 
-        `when`(heosClient.volumeDown(PLAYER, "0", 3)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/down?step=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeDownResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.volumeDown(io.honnix.kheos.proto.player.v1.VolumeDownRequest.newBuilder()
+          .setPid("0")
+          .setStep(3)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(VolumeDownResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should volume down with default step" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeDownResponse(
-            Heos(GroupedCommand(PLAYER, VOLUME_DOWN),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "5")
-                .build()))
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
 
-        `when`(heosClient.volumeDown(PLAYER, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/down")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeDownResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.volumeDown(io.honnix.kheos.proto.player.v1.VolumeDownRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if step is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/volume/down?step=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if invalid step" {
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
+
+      heosPlayerService.volumeDown(
+          io.honnix.kheos.proto.player.v1.VolumeDownRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get mute" {
-      forAll(allVersions()) { version ->
-        val payload = GetMuteResponse(
-            Heos(GroupedCommand(PLAYER, GET_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<GetMuteResponse>>()
+      `when`(heosClient.getMute(PLAYER, "0"))
+          .thenReturn(GetMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.getMute(PLAYER, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/mute")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.getMute(io.honnix.kheos.proto.player.v1.GetMuteRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetMuteResponse>>()
+
+      heosPlayerService.getMute(io.honnix.kheos.proto.player.v1.GetMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set mute" {
-      forAll(allVersions()) { version ->
-        val payload = SetMuteResponse(
-            Heos(GroupedCommand(PLAYER, SET_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("state", MuteState.OFF)
-                .build()))
+      val responseObserver = mock<StreamObserver<SetMuteResponse>>()
+      `when`(heosClient.setMute(PLAYER, "0", MuteState.State.ON))
+          .thenReturn(SetMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.setMute(PLAYER, "0", MuteState.OFF)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/mute?state=off")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.setMute(io.honnix.kheos.proto.player.v1.SetMuteRequest.newBuilder()
+          .setPid("0")
+          .setState(MuteState.State.ON)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<SetMuteResponse>>()
+
+      heosPlayerService.setMute(
+          io.honnix.kheos.proto.player.v1.SetMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should toggle mute if no state" {
-      forAll(allVersions()) { version ->
-        val payload = ToggleMuteResponse(
-            Heos(GroupedCommand(PLAYER, TOGGLE_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<ToggleMuteResponse>>()
+      `when`(heosClient.toggleMute(PLAYER, "0"))
+          .thenReturn(ToggleMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.toggleMute(PLAYER, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath, "/0/mute")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<ToggleMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.toggleMute(io.honnix.kheos.proto.player.v1.ToggleMuteRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(ToggleMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if invalid state" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/mute?state=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<ToggleMuteResponse>>()
+
+      heosPlayerService.toggleMute(
+          io.honnix.kheos.proto.player.v1.ToggleMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get play mode" {
-      forAll(allVersions()) { version ->
-        val payload = GetPlayModeResponse(
-            Heos(GroupedCommand(PLAYER, GET_PLAY_MODE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("repeat", PlayRepeatState.OFF)
-                .add("shuffle", PlayShuffleState.OFF)
-                .build()))
+      val responseObserver = mock<StreamObserver<GetPlayModeResponse>>()
+      `when`(heosClient.getPlayMode("0"))
+          .thenReturn(GetPlayModeResponse.getDefaultInstance())
 
-        `when`(heosClient.getPlayMode("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/mode")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetPlayModeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.getPlayMode(GetPlayModeRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetPlayModeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetPlayModeResponse>>()
+
+      heosPlayerService.getPlayMode(GetPlayModeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set play mode" {
-      forAll(allVersions()) { version ->
-        val payload = SetPlayModeResponse(
-            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("repeat", PlayRepeatState.ON_ALL)
-                .add("shuffle", PlayShuffleState.OFF)
-                .build()))
+      val responseObserver = mock<StreamObserver<SetPlayModeResponse>>()
+      `when`(heosClient.setPlayMode("0", PlayRepeatState.State.ON_ALL, PlayShuffleState.State.OFF))
+          .thenReturn(SetPlayModeResponse.getDefaultInstance())
 
-        `when`(heosClient.setPlayMode("0", PlayRepeatState.ON_ALL, PlayShuffleState.OFF))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/mode?repeat=on_all&shuffle=off")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetPlayModeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.setPlayMode(SetPlayModeRequest.newBuilder()
+          .setPid("0")
+          .setRepeat(PlayRepeatState.State.ON_ALL)
+          .setShuffle(PlayShuffleState.State.OFF)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetPlayModeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should set play mode repeat" {
-      forAll(allVersions()) { version ->
-        val payload = SetPlayModeResponse(
-            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("repeat", PlayRepeatState.ON_ALL)
-                .build()))
+      val responseObserver = mock<StreamObserver<SetPlayModeResponse>>()
+      `when`(heosClient.setPlayMode("0", PlayRepeatState.State.ON_ALL))
+          .thenReturn(SetPlayModeResponse.getDefaultInstance())
 
-        `when`(heosClient.setPlayMode("0", PlayRepeatState.ON_ALL)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/mode?repeat=on_all")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetPlayModeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.setPlayMode(SetPlayModeRequest.newBuilder()
+          .setPid("0")
+          .setRepeat(PlayRepeatState.State.ON_ALL)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetPlayModeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should set play mode shuffle" {
-      forAll(allVersions()) { version ->
-        val payload = SetPlayModeResponse(
-            Heos(GroupedCommand(PLAYER, SET_PLAY_MODE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("shuffle", PlayShuffleState.ON)
-                .build()))
+      val responseObserver = mock<StreamObserver<SetPlayModeResponse>>()
+      `when`(heosClient.setPlayMode("0", PlayShuffleState.State.OFF))
+          .thenReturn(SetPlayModeResponse.getDefaultInstance())
 
-        `when`(heosClient.setPlayMode("0", PlayShuffleState.ON))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath, "/0/mode?shuffle=on")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetPlayModeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.setPlayMode(SetPlayModeRequest.newBuilder()
+          .setPid("0")
+          .setShuffle(PlayShuffleState.State.OFF)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetPlayModeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<SetPlayModeResponse>>()
+
+      heosPlayerService.setPlayMode(SetPlayModeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should return client error if missing both states" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/mode")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      val responseObserver = mock<StreamObserver<SetPlayModeResponse>>()
+
+      heosPlayerService.setPlayMode(SetPlayModeRequest.newBuilder()
+          .setPid("0").build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get queue" {
-      forAll(allVersions()) { version ->
-        val payload = GetQueueResponse(
-            Heos(GroupedCommand(PLAYER, GET_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()),
-            listOf(QueueItem("song", "album", "artist",
-                URL("http://example.com"), "0", "0", "0")))
+      val responseObserver = mock<StreamObserver<GetQueueResponse>>()
+      `when`(heosClient.getQueue("0", IntRange(0, 10)))
+          .thenReturn(GetQueueResponse.getDefaultInstance())
 
-        `when`(heosClient.getQueue("0", IntRange(0, 0))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/0/queue?range=0,0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.getQueue(GetQueueRequest.newBuilder()
+          .setPid("0")
+          .setStart(0)
+          .setEnd(10)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should get queue with default range" {
-      forAll(allVersions()) { version ->
-        val payload = GetQueueResponse(
-            Heos(GroupedCommand(PLAYER, GET_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()),
-            listOf(QueueItem("song", "album", "artist",
-                URL("http://example.com"), "0", "0", "0")))
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<GetQueueResponse>>()
 
-        `when`(heosClient.getQueue("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/0/queue")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
-    }
+      heosPlayerService.getQueue(GetQueueRequest.getDefaultInstance(), responseObserver)
 
-    "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, basePath, "/0/queue?range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should play queue" {
-      forAll(allVersions()) { version ->
-        val payload = PlayQueueResponse(
-            Heos(GroupedCommand(PLAYER, PLAY_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("qid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<PlayQueueResponse>>()
+      `when`(heosClient.playQueue("0", "0"))
+          .thenReturn(PlayQueueResponse.getDefaultInstance())
 
-        `when`(heosClient.playQueue("0", "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath, "/0/queue/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.playQueue(PlayQueueRequest.newBuilder()
+          .setPid("0")
+          .setQid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(PlayQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should remove a single item from queue" {
-      forAll(allVersions()) { version ->
-        val payload = RemoveFromQueueResponse(
-            Heos(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("qid", "0")
-                .build()))
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<PlayQueueResponse>>()
 
-        `when`(heosClient.removeFromQueue("0", listOf("0"))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE", path(version, basePath, "/0/queue/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<RemoveFromQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.playQueue(PlayQueueRequest.newBuilder()
+          .setQid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should remove multiple items from queue" {
-      forAll(allVersions()) { version ->
-        val payload = RemoveFromQueueResponse(
-            Heos(GroupedCommand(PLAYER, REMOVE_FROM_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("qid", "0,1")
-                .build()))
+    "should return client error if no qid" {
+      val responseObserver = mock<StreamObserver<PlayQueueResponse>>()
 
-        `when`(heosClient.removeFromQueue("0", listOf("0", "1"))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE", path(version, basePath, "/0/queue?qid=0&qid=1")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<RemoveFromQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.playQueue(PlayQueueRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should clear queue" {
-      forAll(allVersions()) { version ->
-        val payload = ClearQueueResponse(
-            Heos(GroupedCommand(PLAYER, CLEAR_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+    "should remove elements from queue" {
+      val responseObserver = mock<StreamObserver<RemoveFromQueueResponse>>()
+      `when`(heosClient.removeFromQueue("0", listOf("0", "1", "2")))
+          .thenReturn(RemoveFromQueueResponse.getDefaultInstance())
 
-        `when`(heosClient.clearQueue("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE", path(version, basePath, "/0/queue")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<ClearQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.removeFromQueue(RemoveFromQueueRequest.newBuilder()
+          .setPid("0")
+          .addAllQids(listOf("0", "1", "2"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(RemoveFromQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<RemoveFromQueueResponse>>()
+
+      heosPlayerService.removeFromQueue(RemoveFromQueueRequest.newBuilder()
+          .addAllQids(listOf("0", "1"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if no qids" {
+      val responseObserver = mock<StreamObserver<RemoveFromQueueResponse>>()
+
+      heosPlayerService.removeFromQueue(RemoveFromQueueRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should save queue" {
-      forAll(allVersions()) { version ->
-        val payload = SaveQueueResponse(
-            Heos(GroupedCommand(PLAYER, SAVE_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("name", "foo bar")
-                .build()))
+      val responseObserver = mock<StreamObserver<SaveQueueResponse>>()
+      `when`(heosClient.saveQueue("0", "foo"))
+          .thenReturn(SaveQueueResponse.getDefaultInstance())
 
-        `when`(heosClient.saveQueue("0", "foo bar")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath, "/0/queue?name=foo%20bar")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SaveQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.saveQueue(SaveQueueRequest.newBuilder()
+          .setPid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SaveQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if missing name" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/queue")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<SaveQueueResponse>>()
+
+      heosPlayerService.saveQueue(SaveQueueRequest.newBuilder()
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should play next" {
-      forAll(allVersions()) { version ->
-        val payload = PlayNextResponse(
-            Heos(GroupedCommand(PLAYER, PLAY_NEXT),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+    "should return client error if no name" {
+      val responseObserver = mock<StreamObserver<SaveQueueResponse>>()
 
-        `when`(heosClient.playNext("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath, "/0/play/next")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayNextResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.saveQueue(SaveQueueRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should clear queue" {
+      val responseObserver = mock<StreamObserver<ClearQueueResponse>>()
+      `when`(heosClient.clearQueue("0"))
+          .thenReturn(ClearQueueResponse.getDefaultInstance())
+
+      heosPlayerService.clearQueue(ClearQueueRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(ClearQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<ClearQueueResponse>>()
+
+      heosPlayerService.clearQueue(ClearQueueRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should play previous" {
-      forAll(allVersions()) { version ->
-        val payload = PlayPreviousResponse(
-            Heos(GroupedCommand(PLAYER, PLAY_PREVIOUS),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<PlayPreviousResponse>>()
+      `when`(heosClient.playPrevious("0"))
+          .thenReturn(PlayPreviousResponse.getDefaultInstance())
 
-        `when`(heosClient.playPrevious("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath, "/0/play/previous")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayPreviousResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosPlayerService.playPrevious(PlayPreviousRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(PlayPreviousResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<PlayPreviousResponse>>()
+
+      heosPlayerService.playPrevious(PlayPreviousRequest.getDefaultInstance(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should play next" {
+      val responseObserver = mock<StreamObserver<PlayNextResponse>>()
+      `when`(heosClient.playNext("0"))
+          .thenReturn(PlayNextResponse.getDefaultInstance())
+
+      heosPlayerService.playNext(PlayNextRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(PlayNextResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no pid" {
+      val responseObserver = mock<StreamObserver<PlayNextResponse>>()
+
+      heosPlayerService.playNext(PlayNextRequest.getDefaultInstance(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
   }
 }
 
-internal class HeosGroupCommandResourceTest : StringSpec() {
-  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
-
-  private val basePath = "/groups"
+internal class HeosGroupServiceTest : StringSpec() {
+  private val executor = Executors.newSingleThreadExecutor()
 
   private val heosClient = mock<HeosClient>()
 
-  private fun init(environment: Environment) {
-    environment.routingEngine()
-        .registerRoutes(HeosGroupCommandResource(heosClient).routes().stream())
+  private val heosGroupService = HeosGroupService(heosClient, executor)
+
+  private val captor = ArgumentCaptor.forClass(io.grpc.StatusRuntimeException::class.java)
+
+  override fun interceptSpec(context: Spec, spec: () -> Unit) {
+    super.interceptSpec(context, spec)
+    executor.shutdownNow()
   }
 
   init {
-    serviceHelper.start()
-    autoClose(serviceHelper)
-
     "should get groups" {
-      forAll(allVersions()) { version ->
-        val payload = GetGroupsResponse(
-            Heos(GroupedCommand(GROUP, GET_GROUPS),
-                Result.SUCCESS, Message()),
-            listOf(
-                Group("foo", "0",
-                    listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
-                        GroupedPlayer("foobar", "1", Role.MEMBER))),
-                Group("bar", "1",
-                    listOf(GroupedPlayer("barbar", "1", Role.LEADER)))))
+      val responseObserver = mock<StreamObserver<GetGroupsResponse>>()
+      `when`(heosClient.getGroups()).thenReturn(GetGroupsResponse.getDefaultInstance())
 
-        `when`(heosClient.getGroups()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetGroupsResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosGroupService.getGroups(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetGroupsResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should get group info" {
-      forAll(allVersions()) { version ->
-        val payload = GetGroupInfoResponse(
-            Heos(GroupedCommand(GROUP, GET_GROUP_INFO),
-                Result.SUCCESS, Message.Builder()
-                .add("gid", "0")
-                .build()),
-            Group("foo", "0",
-                listOf(GroupedPlayer("foofoo", "0", Role.LEADER),
-                    GroupedPlayer("foobar", "1", Role.MEMBER))))
+      val responseObserver = mock<StreamObserver<GetGroupInfoResponse>>()
+      `when`(heosClient.getGroupInfo("0")).thenReturn(GetGroupInfoResponse.getDefaultInstance())
 
-        `when`(heosClient.getGroupInfo("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath, "/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetGroupInfoResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosGroupService.getGroupInfo(GetGroupInfoRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetGroupInfoResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<GetGroupInfoResponse>>()
+
+      heosGroupService.getGroupInfo(GetGroupInfoRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set group" {
-      forAll(allVersions()) { version ->
-        val payload = SetGroupResponse(
-            Heos(GroupedCommand(GROUP, SET_GROUP),
-                Result.SUCCESS, Message.Builder()
-                .add("gid", "0")
-                .add("name", "foo")
-                .add("pid", "0,1,2")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetGroupResponse>>()
+      `when`(heosClient.setGroup("0", listOf("1", "2")))
+          .thenReturn(SetGroupResponse.getDefaultInstance())
 
-        `when`(heosClient.setGroup("0", listOf("1", "2"))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "?leader_id=0&member_ids=1,2")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetGroupResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosGroupService.setGroup(SetGroupRequest.newBuilder()
+          .setLeader("0")
+          .addAllMembers(listOf("1", "2"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetGroupResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if no leader_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "?member_ids=1,2")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no leader id" {
+      val responseObserver = mock<StreamObserver<SetGroupResponse>>()
+
+      heosGroupService.setGroup(SetGroupRequest.newBuilder()
+          .addAllMembers(listOf("1", "2"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if no member_ids" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "?leader_id=0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+    "should return client error if no members" {
+      val responseObserver = mock<StreamObserver<SetGroupResponse>>()
 
-    "should return client error if no leader_id and member_ids" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosGroupService.setGroup(SetGroupRequest.newBuilder()
+          .setLeader("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should delete group" {
-      forAll(allVersions()) { version ->
-        val payload = DeleteGroupResponse(
-            Heos(GroupedCommand(GROUP, SET_GROUP),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<DeleteGroupResponse>>()
+      `when`(heosClient.deleteGroup("0"))
+          .thenReturn(DeleteGroupResponse.getDefaultInstance())
 
-        `when`(heosClient.deleteGroup("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE", path(version, basePath,
-                "?leader_id=0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<DeleteGroupResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosGroupService.deleteGroup(DeleteGroupRequest.newBuilder()
+          .setLeader("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(DeleteGroupResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if no leader_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("DELETE",
-                path(version, basePath, "")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no leader id" {
+      val responseObserver = mock<StreamObserver<DeleteGroupResponse>>()
+
+      heosGroupService.deleteGroup(DeleteGroupRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get volume" {
-      forAll(allVersions()) { version ->
-        val payload = GetVolumeResponse(
-            Heos(GroupedCommand(GROUP, GET_VOLUME),
-                Result.SUCCESS, Message.Builder()
-                .add("gid", "0")
-                .add("level", "10")
-                .build()))
+      val responseObserver = mock<StreamObserver<GetVolumeResponse>>()
+      `when`(heosClient.getVolume(GROUP, "0"))
+          .thenReturn(GetVolumeResponse.getDefaultInstance())
 
-        `when`(heosClient.getVolume(GROUP, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/volume")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetVolumeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.getVolume(io.honnix.kheos.proto.group.v1.GetVolumeRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetVolumeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<GetVolumeResponse>>()
+
+      heosGroupService.getVolume(
+          io.honnix.kheos.proto.group.v1.GetVolumeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set volume" {
-      forAll(allVersions()) { version ->
-        val payload = SetVolumeResponse(
-            Heos(GroupedCommand(GROUP, SET_VOLUME),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("level", "10")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetVolumeResponse>>()
+      `when`(heosClient.setVolume(GROUP, "0", 10))
+          .thenReturn(SetVolumeResponse.getDefaultInstance())
 
-        `when`(heosClient.setVolume(GROUP, "0", 10)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/volume?level=10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetVolumeResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.setVolume(io.honnix.kheos.proto.group.v1.SetVolumeRequest.newBuilder()
+          .setGid("0")
+          .setLevel(10)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetVolumeResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if no level" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/volume")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<SetVolumeResponse>>()
 
-    "should return client error if level is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/volume?level=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosGroupService.setVolume(
+          io.honnix.kheos.proto.group.v1.SetVolumeRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should volume up" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeUpResponse(
-            Heos(GroupedCommand(GROUP, VOLUME_UP),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "3")
-                .build()))
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
+      `when`(heosClient.volumeUp(GROUP, "0", 3))
+          .thenReturn(VolumeUpResponse.getDefaultInstance())
 
-        `when`(heosClient.volumeUp(GROUP, "0", 3)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/up?step=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeUpResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.volumeUp(io.honnix.kheos.proto.group.v1.VolumeUpRequest.newBuilder()
+          .setGid("0")
+          .setStep(3)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(VolumeUpResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should volume up with default step" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeUpResponse(
-            Heos(GroupedCommand(GROUP, VOLUME_UP),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "5")
-                .build()))
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
 
-        `when`(heosClient.volumeUp(GROUP, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/up")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeUpResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.volumeUp(
+          io.honnix.kheos.proto.group.v1.VolumeUpRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if step is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/volume/up?step=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if invalid step" {
+      val responseObserver = mock<StreamObserver<VolumeUpResponse>>()
+
+      heosGroupService.volumeUp(io.honnix.kheos.proto.group.v1.VolumeUpRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should volume down" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeDownResponse(
-            Heos(GroupedCommand(GROUP, VOLUME_DOWN),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "3")
-                .build()))
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
+      `when`(heosClient.volumeDown(GROUP, "0", 3))
+          .thenReturn(VolumeDownResponse.getDefaultInstance())
 
-        `when`(heosClient.volumeDown(GROUP, "0", 3)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/down?step=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeDownResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.volumeDown(io.honnix.kheos.proto.group.v1.VolumeDownRequest.newBuilder()
+          .setGid("0")
+          .setStep(3)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(VolumeDownResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should volume down with default step" {
-      forAll(allVersions()) { version ->
-        val payload = VolumeDownResponse(
-            Heos(GroupedCommand(GROUP, VOLUME_DOWN),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("step", "5")
-                .build()))
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
 
-        `when`(heosClient.volumeDown(GROUP, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, basePath,
-                "/0/volume/down")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<VolumeDownResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.volumeDown(io.honnix.kheos.proto.group.v1.VolumeDownRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if step is not an integer" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, basePath, "/0/volume/down?step=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if invalid step" {
+      val responseObserver = mock<StreamObserver<VolumeDownResponse>>()
+
+      heosGroupService.volumeDown(
+          io.honnix.kheos.proto.group.v1.VolumeDownRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get mute" {
-      forAll(allVersions()) { version ->
-        val payload = GetMuteResponse(
-            Heos(GroupedCommand(GROUP, GET_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<GetMuteResponse>>()
+      `when`(heosClient.getMute(GROUP, "0"))
+          .thenReturn(GetMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.getMute(GROUP, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/0/mute")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.getMute(io.honnix.kheos.proto.group.v1.GetMuteRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<GetMuteResponse>>()
+
+      heosGroupService.getMute(io.honnix.kheos.proto.group.v1.GetMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set mute" {
-      forAll(allVersions()) { version ->
-        val payload = SetMuteResponse(
-            Heos(GroupedCommand(GROUP, SET_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("state", MuteState.OFF)
-                .build()))
+      val responseObserver = mock<StreamObserver<SetMuteResponse>>()
+      `when`(heosClient.setMute(GROUP, "0", MuteState.State.ON))
+          .thenReturn(SetMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.setMute(GROUP, "0", MuteState.OFF)).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath,
-                "/0/mute?state=off")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.setMute(io.honnix.kheos.proto.group.v1.SetMuteRequest.newBuilder()
+          .setGid("0")
+          .setState(MuteState.State.ON)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<SetMuteResponse>>()
+
+      heosGroupService.setMute(
+          io.honnix.kheos.proto.group.v1.SetMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should toggle mute if no state" {
-      forAll(allVersions()) { version ->
-        val payload = ToggleMuteResponse(
-            Heos(GroupedCommand(GROUP, TOGGLE_MUTE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<ToggleMuteResponse>>()
+      `when`(heosClient.toggleMute(CommandGroup.GROUP, "0"))
+          .thenReturn(ToggleMuteResponse.getDefaultInstance())
 
-        `when`(heosClient.toggleMute(GROUP, "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, basePath, "/0/mute")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<ToggleMuteResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosGroupService.toggleMute(io.honnix.kheos.proto.group.v1.ToggleMuteRequest.newBuilder()
+          .setGid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(ToggleMuteResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should return client error if invalid state" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, basePath, "/0/mute?state=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no gid" {
+      val responseObserver = mock<StreamObserver<ToggleMuteResponse>>()
+
+      heosGroupService.toggleMute(
+          io.honnix.kheos.proto.group.v1.ToggleMuteRequest.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
   }
 }
 
-internal class HeosBrowseCommandResourceTest : StringSpec() {
-  private val serviceHelper = ServiceHelper.create({ init(it) }, "kheos-service-test")
-
-  private val basePath = "/browse"
+internal class HeosBrowseServiceTest : StringSpec() {
+  private val executor = Executors.newSingleThreadExecutor()
 
   private val heosClient = mock<HeosClient>()
 
-  private fun init(environment: Environment) {
-    environment.routingEngine()
-        .registerRoutes(HeosBrowseCommandResource(heosClient).routes().stream())
+  private val heosBrowseService = HeosBrowseService(heosClient, executor)
+
+  private val captor = ArgumentCaptor.forClass(io.grpc.StatusRuntimeException::class.java)
+
+  override fun interceptSpec(context: Spec, spec: () -> Unit) {
+    super.interceptSpec(context, spec)
+    executor.shutdownNow()
   }
 
   init {
-    serviceHelper.start()
-    autoClose(serviceHelper)
-
     "should get music sources" {
-      forAll(allVersions()) { version ->
-        val payload = GetMusicSourcesResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, GET_MUSIC_SOURCES),
-                Result.SUCCESS, Message()),
-            listOf(
-                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "0"),
-                MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "1")))
+      val responseObserver = mock<StreamObserver<GetMusicSourcesResponse>>()
+      `when`(heosClient.getMusicSources()).thenReturn(GetMusicSourcesResponse.getDefaultInstance())
 
-        `when`(heosClient.getMusicSources()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", "/music_sources")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetMusicSourcesResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.getMusicSources(Empty.getDefaultInstance(), responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetMusicSourcesResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should get music source info" {
-      forAll(allVersions()) { version ->
-        val payload = GetMusicSourceInfoResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SOURCE_INFO),
-                Result.SUCCESS, Message()),
-            MusicSource("bar", URL("http://example.com"), DLNA_SERVER, "0"))
+      val responseObserver = mock<StreamObserver<GetMusicSourceInfoResponse>>()
+      `when`(heosClient.getMusicSourceInfo("0"))
+          .thenReturn(GetMusicSourceInfoResponse.getDefaultInstance())
 
-        `when`(heosClient.getMusicSourceInfo("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", "/music_sources/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetMusicSourceInfoResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.getMusicSourceInfo(GetMusicSourceInfoRequest.newBuilder()
+          .setSid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetMusicSourceInfoResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no sid" {
+      val responseObserver = mock<StreamObserver<GetMusicSourceInfoResponse>>()
+
+      heosBrowseService.getMusicSourceInfo(GetMusicSourceInfoRequest.getDefaultInstance(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should browse media sources" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseMediaSourcesResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("returned", 2)
-                .add("count", 2)
-                .build()),
-            listOf(
-                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
-                MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
-            listOf(mapOf("browse" to
-                listOf(Option.CREATE_NEW_STATION))))
+      val responseObserver = mock<StreamObserver<BrowseMediaSourcesResponse>>()
+      `when`(heosClient.browseMediaSources("0", IntRange(1, 5)))
+          .thenReturn(BrowseMediaSourcesResponse.getDefaultInstance())
 
-        `when`(heosClient.browseMediaSources("0", IntRange(0, 10))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/media_sources/0?range=0,10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.browseMediaSources(BrowseMediaSourcesRequest.newBuilder()
+          .setSid("0")
+          .setStart(1)
+          .setEnd(5)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(BrowseMediaSourcesResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should browse media sources with default range" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseMediaSourcesResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("returned", 2)
-                .add("count", 2)
-                .build()),
-            listOf(
-                MusicSource("foo", URL("http://example.com"), HEOS_SERVER, "100"),
-                MusicSource("bar", URL("http://example.com"), HEOS_SERVICE, "101")),
-            listOf(mapOf("browse" to
-                listOf(Option.CREATE_NEW_STATION))))
+    "should return client error if no sid" {
+      val responseObserver = mock<StreamObserver<BrowseMediaSourcesResponse>>()
 
-        `when`(heosClient.browseMediaSources("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/media_sources/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseMediaSourcesResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
-    }
+      heosBrowseService.browseMediaSources(BrowseMediaSourcesRequest.getDefaultInstance(),
+          responseObserver)
 
-    "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, basePath, "/media_sources/0?range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should browse top music" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseTopMusicResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")))
+      val responseObserver = mock<StreamObserver<BrowseTopMusicResponse>>()
+      `when`(heosClient.browseTopMusic("0", IntRange(1, 5)))
+          .thenReturn(BrowseTopMusicResponse.getDefaultInstance())
 
-        `when`(heosClient.browseTopMusic("0", IntRange(0, 10))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/top_music/0?range=0,10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.browseTopMusic(BrowseTopMusicRequest.newBuilder()
+          .setSid("0")
+          .setStart(1)
+          .setEnd(5)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(BrowseTopMusicResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should browse top music with default range" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseTopMusicResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")))
+    "should return client error if no sid" {
+      val responseObserver = mock<StreamObserver<BrowseTopMusicResponse>>()
 
-        `when`(heosClient.browseTopMusic("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/top_music/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseTopMusicResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
-    }
+      heosBrowseService.browseTopMusic(BrowseTopMusicRequest.getDefaultInstance(),
+          responseObserver)
 
-    "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, basePath, "/top_music/0?range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should browse source containers" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseSourceContainersResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")),
-            listOf(mapOf("browse" to
-                listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
+      val responseObserver = mock<StreamObserver<BrowseSourceContainersResponse>>()
+      `when`(heosClient.browseSourceContainers("0", "0", IntRange(1, 5)))
+          .thenReturn(BrowseSourceContainersResponse.getDefaultInstance())
 
-        `when`(heosClient.browseSourceContainers("0", "0", IntRange(0, 10))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/source_containers/0/0?range=0,10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseSourceContainersResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.browseSourceContainers(BrowseSourceContainersRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .setStart(1)
+          .setEnd(5)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(BrowseSourceContainersResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should browse source containers with default range" {
-      forAll(allVersions()) { version ->
-        val payload = BrowseSourceContainersResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, Command.BROWSE),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")),
-            listOf(mapOf("browse" to
-                listOf(Option.ADD_PLAYLIST_TO_LIBRARY))))
+    "should return client error if no sid" {
+      val responseObserver = mock<StreamObserver<BrowseSourceContainersResponse>>()
 
-        `when`(heosClient.browseSourceContainers("0", "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, basePath,
-                "/source_containers/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<BrowseSourceContainersResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.browseSourceContainers(BrowseSourceContainersRequest.newBuilder()
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, basePath, "/source_containers/0/0?range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if no cid" {
+      val responseObserver = mock<StreamObserver<BrowseSourceContainersResponse>>()
+
+      heosBrowseService.browseSourceContainers(BrowseSourceContainersRequest.newBuilder()
+          .setSid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should get search criteria" {
-      forAll(allVersions()) { version ->
-        val payload = GetSearchCriteriaResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SEARCH_CRITERIA),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .build()),
-            listOf(
-                SearchCriteria("foo", 0, YES),
-                SearchCriteria("bar", 1, NO)))
+      val responseObserver = mock<StreamObserver<GetSearchCriteriaResponse>>()
+      `when`(heosClient.getSearchCriteria("0"))
+          .thenReturn(GetSearchCriteriaResponse.getDefaultInstance())
 
-        `when`(heosClient.getSearchCriteria("0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", "/search_criteria/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetSearchCriteriaResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.getSearchCriteria(GetSearchCriteriaRequest.newBuilder()
+          .setSid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(GetSearchCriteriaResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if no sid" {
+      val responseObserver = mock<StreamObserver<GetSearchCriteriaResponse>>()
+
+      heosBrowseService.getSearchCriteria(GetSearchCriteriaRequest.getDefaultInstance(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should search" {
-      forAll(allVersions()) { version ->
-        val payload = SearchResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("search", "*")
-                .add("scid", 0)
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")))
+      val responseObserver = mock<StreamObserver<SearchResponse>>()
+      `when`(heosClient.search("0", Scid.ARTIST, "*", IntRange(0, 1)))
+          .thenReturn(SearchResponse.getDefaultInstance())
 
-        `when`(heosClient.search("0", 0, "*", IntRange(0, 10))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "",
-                "/search/0/0?search_string=*&range=0,10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SearchResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
+      heosBrowseService.search(SearchRequest.newBuilder()
+          .setSid("0")
+          .setScid(Scid.ARTIST)
+          .setSearch("*")
+          .setStart(0)
+          .setEnd(1)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SearchResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should search if no range" {
-      forAll(allVersions()) { version ->
-        val payload = SearchResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, SEARCH),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("search", "*")
-                .add("scid", 0)
-                .add("returned", 6)
-                .add("count", 6)
-                .build()),
-            listOf(
-                MediaArtist(YES, NO, ARTIST, "artist name",
-                    URL("http://example.com"), "0", "0"),
-                MediaAlbum(YES, YES, ALBUM, "album name",
-                    URL("http://example.com"), "0", "0", "1"),
-                MediaSong(NO, YES, SONG, "song name",
-                    URL("http://example.com"), "artist name", "album name", "2"),
-                MediaGenre(YES, NO, GENRE, "genre name",
-                    URL("http://example.com"), "0", "3"),
-                MediaContainer(YES, NO, CONTAINER, "container name",
-                    URL("http://example.com"), "0", "4"),
-                MediaStation(NO, YES, STATION, "station name",
-                    URL("http://example.com"), "5")))
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<SearchResponse>>()
 
-        `when`(heosClient.search("0", 0, "*")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "",
-                "/search/0/0?search_string=*")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SearchResponse>(response.payload().get().toByteArray()) shouldBe
-            payload
-      }
-    }
+      heosBrowseService.search(SearchRequest.newBuilder()
+          .setScid(Scid.ARTIST)
+          .setSearch("*")
+          .setStart(0)
+          .setEnd(1)
+          .build(),
+          responseObserver)
 
-    "should return client error if invalid scid" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, "", "/search/0/foo?search_string=*")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
-
-    "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, "", "/search/0/0?search_string=*&range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should return client error if missing search_string" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("GET",
-                path(version, "", "/search/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      val responseObserver = mock<StreamObserver<SearchResponse>>()
+
+      heosBrowseService.search(SearchRequest.newBuilder()
+          .setSid("0")
+          .setScid(Scid.ARTIST)
+          .setStart(0)
+          .setEnd(1)
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should play stream" {
-      forAll(allVersions()) { version ->
-        val payload = PlayStreamResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("mid", "0")
-                .add("name", "foo")
-                .build()))
+      val responseObserver = mock<StreamObserver<PlayStreamResponse>>()
+      `when`(heosClient.playStream("0", "0", "0", "foo", "0"))
+          .thenReturn(PlayStreamResponse.getDefaultInstance())
 
-        `when`(heosClient.playStream("0", "0", "0", "foo", "0"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, "",
-                "/players/0/play/stream/0/0/0?name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayStreamResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.playStream(PlayStreamRequest.newBuilder()
+          .setPid("0")
+          .setSid("0")
+          .setCid("0")
+          .setMid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(PlayStreamResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should play stream without cid" {
-      forAll(allVersions()) { version ->
-        val payload = PlayStreamResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_STREAM),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("mid", "0")
-                .add("name", "foo")
-                .build()))
+    "should return client error if missing pid" {
+      val responseObserver = mock<StreamObserver<PlayStreamResponse>>()
 
-        `when`(heosClient.playStream("0", "0", "0", "foo"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, "",
-                "/players/0/play/stream/0/_/0?name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayStreamResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.playStream(PlayStreamRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .setMid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<PlayStreamResponse>>()
+
+      heosBrowseService.playStream(PlayStreamRequest.newBuilder()
+          .setPid("0")
+          .setCid("0")
+          .setMid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if missing mid" {
+      val responseObserver = mock<StreamObserver<PlayStreamResponse>>()
+
+      heosBrowseService.playStream(PlayStreamRequest.newBuilder()
+          .setPid("0")
+          .setSid("0")
+          .setCid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should return client error if missing name" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, "", "/players/0/play/stream/0/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      val responseObserver = mock<StreamObserver<PlayStreamResponse>>()
+
+      heosBrowseService.playStream(PlayStreamRequest.newBuilder()
+          .setPid("0")
+          .setSid("0")
+          .setCid("0")
+          .setMid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should play input" {
-      forAll(allVersions()) { version ->
-        val payload = PlayInputResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("mid", "0")
-                .add("spid", "0")
-                .add("input", "inputs/aux_in_1")
-                .build()))
+      val responseObserver = mock<StreamObserver<PlayInputResponse>>()
+      `when`(heosClient.playInput("0", "0", "0", "input/aux_in_1"))
+          .thenReturn(PlayInputResponse.getDefaultInstance())
 
-        `when`(heosClient.playInput("0", "0", "0", "inputs/aux_in_1"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, "",
-                "/players/0/play/input?mid=0&spid=0&input=inputs%2Faux_in_1")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayInputResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.playInput(PlayInputRequest.newBuilder()
+          .setPid("0")
+          .setMid("0")
+          .setSpid("0")
+          .setInput("input/aux_in_1")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(PlayInputResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should play input from specified input" {
-      forAll(allVersions()) { version ->
-        val payload = PlayInputResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, PLAY_INPUT),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("input", "inputs/aux_in_1")
-                .build()))
+    "should return client error if missing pid" {
+      val responseObserver = mock<StreamObserver<PlayInputResponse>>()
 
-        `when`(heosClient.playInput("0", input = "inputs/aux_in_1"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("POST", path(version, "",
-                "/players/0/play/input?input=inputs%2Faux_in_1")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<PlayInputResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.playInput(PlayInputRequest.newBuilder()
+          .setMid("0")
+          .setSpid("0")
+          .setInput("input/aux_in_1")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if no query parameter" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("POST",
-                path(version, "", "/players/0/play/input")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if missing mid, spid, and input" {
+      val responseObserver = mock<StreamObserver<PlayInputResponse>>()
+
+      heosBrowseService.playInput(PlayInputRequest.newBuilder()
+          .setPid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should add container to queue" {
-      forAll(allVersions()) { version ->
-        val payload = AddToQueueResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("aid", 3)
-                .build()))
+    "should add to queue" {
+      val responseObserver = mock<StreamObserver<AddToQueueResponse>>()
+      `when`(heosClient.addToQueue("0", "0", "0", AddToQueueRequest.AddCriteriaId.ADD_TO_END, "0"))
+          .thenReturn(AddToQueueResponse.getDefaultInstance())
 
-        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT", path(version, "",
-                "/players/0/queue/0/0?criteria_id=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<AddToQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.addToQueue(AddToQueueRequest.newBuilder()
+          .setPid("0")
+          .setSid("0")
+          .setCid("0")
+          .setAid(AddToQueueRequest.AddCriteriaId.ADD_TO_END)
+          .setMid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(AddToQueueResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should add track to queue" {
-      forAll(allVersions()) { version ->
-        val payload = AddToQueueResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, ADD_TO_QUEUE),
-                Result.SUCCESS, Message.Builder()
-                .add("pid", "0")
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("mid", 0)
-                .add("aid", 3)
-                .build()))
+    "should return client error if missing pid" {
+      val responseObserver = mock<StreamObserver<AddToQueueResponse>>()
 
-        `when`(heosClient.addToQueue("0", "0", "0", AddCriteriaId.ADD_TO_END, "0"))
-            .thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT", path(version, "",
-                "/players/0/queue/0/0/0?criteria_id=3")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<AddToQueueResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.addToQueue(AddToQueueRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .setAid(AddToQueueRequest.AddCriteriaId.ADD_TO_END)
+          .setMid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if missing criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, "", "/players/0/queue/0/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<AddToQueueResponse>>()
+
+      heosBrowseService.addToQueue(AddToQueueRequest.newBuilder()
+          .setPid("0")
+          .setCid("0")
+          .setAid(AddToQueueRequest.AddCriteriaId.ADD_TO_END)
+          .setMid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
-    "should return client error if invalid criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, "", "/players/0/queue/0/0/0?criteria_id=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+    "should return client error if missing cid" {
+      val responseObserver = mock<StreamObserver<AddToQueueResponse>>()
 
-    "should return client error if unknown criteria_id" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, "", "/players/0/queue/0/0/0?criteria_id=100")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosBrowseService.addToQueue(AddToQueueRequest.newBuilder()
+          .setPid("0")
+          .setSid("0")
+          .setAid(AddToQueueRequest.AddCriteriaId.ADD_TO_END)
+          .setMid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should rename playlist" {
-      forAll(allVersions()) { version ->
-        val payload = RenamePlaylistResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, RENAME_PLAYLIST),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("name", "foo")
-                .build()))
+      val responseObserver = mock<StreamObserver<RenamePlaylistResponse>>()
+      `when`(heosClient.renamePlaylist("0", "0", "foo"))
+          .thenReturn(RenamePlaylistResponse.getDefaultInstance())
 
-        `when`(heosClient.renamePlaylist("0", "0", "foo")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PUT", path(version, "",
-                "/playlists/0/0?name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<RenamePlaylistResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.renamePlaylist(RenamePlaylistRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(RenamePlaylistResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<RenamePlaylistResponse>>()
+
+      heosBrowseService.renamePlaylist(RenamePlaylistRequest.newBuilder()
+          .setCid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if missing cid" {
+      val responseObserver = mock<StreamObserver<RenamePlaylistResponse>>()
+
+      heosBrowseService.renamePlaylist(RenamePlaylistRequest.newBuilder()
+          .setSid("0")
+          .setName("foo")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should return client error if missing name" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PUT",
-                path(version, "", "/playlists/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      val responseObserver = mock<StreamObserver<RenamePlaylistResponse>>()
+
+      heosBrowseService.renamePlaylist(RenamePlaylistRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should delete playlist" {
-      forAll(allVersions()) { version ->
-        val payload = DeletePlaylistResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, DELETE_PLAYLIST),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("cid", "0")
-                .build()))
+      val responseObserver = mock<StreamObserver<DeletePlaylistResponse>>()
+      `when`(heosClient.deletePlaylist("0", "0"))
+          .thenReturn(DeletePlaylistResponse.getDefaultInstance())
 
-        `when`(heosClient.deletePlaylist("0", "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("DELETE", path(version, "", "/playlists/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<DeletePlaylistResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.deletePlaylist(DeletePlaylistRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(DeletePlaylistResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
+    }
+
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<DeletePlaylistResponse>>()
+
+      heosBrowseService.deletePlaylist(DeletePlaylistRequest.newBuilder()
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if missing cid" {
+      val responseObserver = mock<StreamObserver<DeletePlaylistResponse>>()
+
+      heosBrowseService.deletePlaylist(DeletePlaylistRequest.newBuilder()
+          .setSid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should retrieve metadata" {
-      forAll(allVersions()) { version ->
-        val payload = RetrieveMetadataResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, RETRIEVE_METADATA),
-                Result.SUCCESS, Message.Builder()
-                .add("sid", "0")
-                .add("cid", "0")
-                .add("returned", 2)
-                .add("count", 2)
-                .build()),
-            listOf(io.honnix.kheos.common.Metadata("0", listOf(
-                Image(URL("http://example.com"), 10.0),
-                Image(URL("http://example.com"), 12.0)))))
+      val responseObserver = mock<StreamObserver<RetrieveMetadataResponse>>()
+      `when`(heosClient.retrieveMetadata("0", "0"))
+          .thenReturn(RetrieveMetadataResponse.getDefaultInstance())
 
-        `when`(heosClient.retrieveMetadata("0", "0")).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", "/metadata/0/0")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<RetrieveMetadataResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.retrieveMetadata(RetrieveMetadataRequest.newBuilder()
+          .setSid("0")
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(RetrieveMetadataResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
-    "should get service options" {
-      forAll(allVersions()) { version ->
-        val payload = GetServiceOptionsResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, GET_SERVICE_OPTIONS),
-                Result.SUCCESS, Message()),
-            listOf(mapOf("play" to
-                listOf(
-                    Option.THUMBS_UP,
-                    Option.THUMBS_DOWN))))
+    "should return client error if missing sid" {
+      val responseObserver = mock<StreamObserver<RetrieveMetadataResponse>>()
 
-        `when`(heosClient.getServiceOptions()).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("GET", path(version, "", "/service_options")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<GetServiceOptionsResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.retrieveMetadata(RetrieveMetadataRequest.newBuilder()
+          .setCid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
+    }
+
+    "should return client error if missing cid" {
+      val responseObserver = mock<StreamObserver<RetrieveMetadataResponse>>()
+
+      heosBrowseService.retrieveMetadata(RetrieveMetadataRequest.newBuilder()
+          .setSid("0")
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
 
     "should set service option" {
-      forAll(allVersions()) { version ->
-        val payload = SetServiceOptionResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
-                Result.SUCCESS, Message.Builder()
-                .add("option", Option.CREATE_NEW_STATION.id)
-                .add("sid", "0")
-                .add("name", "foo")
-                .add("range", "1,10")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetServiceOptionResponse>>()
+      `when`(heosClient.setServiceOption(OptionId.CREATE_NEW_STATION, AttributesBuilder()
+          .add("sid", "0")
+          .add("name", "foo")
+          .build(),
+          IntRange(1, 10)))
+          .thenReturn(SetServiceOptionResponse.getDefaultInstance())
 
-        `when`(heosClient.setServiceOption(Option(Option.CREATE_NEW_STATION.id),
-            AttributesBuilder()
-                .add("sid", "0")
-                .add("name", "foo")
-                .build(),
-            IntRange(1, 10))).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, "",
-                "/service_options/13?sid=0&name=foo&range=1,10")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetServiceOptionResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.setServiceOption(SetServiceOptionRequest.newBuilder()
+          .setOption(OptionId.CREATE_NEW_STATION)
+          .putAllValues(mapOf("sid" to "0", "name" to "foo", "range" to "1,10"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetServiceOptionResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should set service option with default range" {
-      forAll(allVersions()) { version ->
-        val payload = SetServiceOptionResponse(
-            Heos(GroupedCommand(CommandGroup.BROWSE, SET_SERVICE_OPTION),
-                Result.SUCCESS, Message.Builder()
-                .add("option", Option.CREATE_NEW_STATION.id)
-                .add("sid", "0")
-                .add("name", "foo")
-                .build()))
+      val responseObserver = mock<StreamObserver<SetServiceOptionResponse>>()
+      `when`(heosClient.setServiceOption(OptionId.CREATE_NEW_STATION, AttributesBuilder()
+          .add("sid", "0")
+          .add("name", "foo")
+          .build()))
+          .thenReturn(SetServiceOptionResponse.getDefaultInstance())
 
-        `when`(heosClient.setServiceOption(Option(Option.CREATE_NEW_STATION.id),
-            AttributesBuilder()
-                .add("sid", "0")
-                .add("name", "foo")
-                .build())).thenReturn(payload)
-        val response = awaitResponse(
-            serviceHelper.request("PATCH", path(version, "",
-                "/service_options/13?sid=0&name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.SUCCESSFUL)))
-        response.payload().isPresent shouldBe true
-        JSON.deserialize<SetServiceOptionResponse>(
-            response.payload().get().toByteArray()) shouldBe payload
-      }
+      heosBrowseService.setServiceOption(SetServiceOptionRequest.newBuilder()
+          .setOption(OptionId.CREATE_NEW_STATION)
+          .putAllValues(mapOf("sid" to "0", "name" to "foo"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onNext(SetServiceOptionResponse.getDefaultInstance())
+      verify(responseObserver, timeout(1000)).onCompleted()
     }
 
     "should return client error if invalid range" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, "", "/service_options/13?sid=0&name=foo&range=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
-    }
+      val responseObserver = mock<StreamObserver<SetServiceOptionResponse>>()
 
-    "should return client error if invalid option" {
-      forAll(allVersions()) { version ->
-        val response = awaitResponse(
-            serviceHelper.request("PATCH",
-                path(version, "", "/service_options/foo?sid=0&name=foo")))
-        assertThat(response, hasStatus(belongsToFamily(StatusType.Family.CLIENT_ERROR)))
-      }
+      heosBrowseService.setServiceOption(SetServiceOptionRequest.newBuilder()
+          .setOption(OptionId.CREATE_NEW_STATION)
+          .putAllValues(mapOf("sid" to "0", "name" to "foo", "range" to "foo"))
+          .build(),
+          responseObserver)
+
+      verify(responseObserver, timeout(1000)).onError(captor.capture())
+      captor.value.status.code shouldBe io.grpc.Status.INVALID_ARGUMENT.code
     }
   }
 }

@@ -13,7 +13,7 @@ A Kotlin implementation of [HEOS API Spec].
 For unknown reason, HEOS decided to go with plain socket which is anything than
 being modern (despite that many commands do return JSON!)
 
-The goal of this project is to add an HTTP interface to make it easier interacting
+The goal of this project is to add an gRPC interface to make it easier interacting
 with HEOS from other services. And of course we need common models, core lib, service
 and client to make it complete.
 
@@ -45,7 +45,7 @@ Or
 docker run -d honnix/kheos-service:<tag>
 ```
 
-By default the service listens on 8080 and can be configured by env `HTTP_PORT`.
+By default the service listens on 8888 and can be configured by env `GRPC_PORT`.
 
 Use `KHEOS_HEOS_HOST` to configure where to find your HEOS.
 
@@ -54,6 +54,10 @@ For details and other configurations, refer to [kheos-service.conf](kheos-servic
 ### To start hacking
 
 Import the maven project to IntelliJ (it works nicer with Kotlin, of course) and start sending PRs!
+
+## kheos-proto
+
+The place where all protobuf files are stored.
 
 ## kheos-common
 
@@ -68,20 +72,6 @@ Test cases are the best place to get a quick idea how to use the lib.
 
 ## kheos-service
 
-This module exposes RESTful APIs to interact with HEOS.
-
-This service is built using [Apollo] framework.
-
-## kheos-client
-
-A client talking to kheos-service.
-
-[Read More](kheos-client/README.md)
-
-## Current status
-
-* [kheos-lib](kheos-lib) and [kheos-server](kheos-server) are fully implemented
-* [kheos-client](kheos-client) is not yet started (and I'm not sure I will start)
+This module exposes gRPC interface to interact with HEOS.
 
 [HEOS API Spec]: http://www2.aerne.com/Public/dok-sw.nsf/0c6187bc750a16fcc1256e3c005a9740/9193bea412104506c1257dbd00298c78/$FILE/HEOS_CLI_ProtocolSpecification-Verion-1.3.pdf
-[Apollo]: https://github.com/spotify/apollo

@@ -1,0 +1,307 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.honnix.kheos.proto.player.v1";
+option java_outer_classname = "KheosProtoPlayer";
+option objc_class_prefix = "KHEOS";
+
+package kheos.proto.player.v1;
+
+import "base.proto";
+
+message Player {
+    enum Lineout {
+        UNUSED_LINEOUT = 0;
+        VARIABLE = 1;
+        FIXED = 2;
+    }
+
+    enum Control {
+        UNUSED_CONTROL = 0;
+        NONE = 1;
+        IR = 2;
+        TRIGGER = 3;
+        NETWORK = 4;
+    }
+
+    string name = 1;
+    string pid = 2;
+    string model = 3;
+    string version = 4;
+    string ip = 5;
+    string network = 6;
+    Lineout lineout = 7;
+    string serial = 8;
+    string gid = 9;
+    Control control = 10;
+}
+
+message PlayState {
+    enum State {
+        PLAY = 0;
+        PAUSE = 1;
+        STOP = 2;
+    }
+}
+
+message PlayRepeatState {
+    enum State {
+        NOP = 0;
+        ON_ALL = 1;
+        ON_ONE = 2;
+        OFF = 3;
+    }
+}
+
+message PlayShuffleState {
+    enum State {
+        NOP = 0;
+        ON = 1;
+        OFF = 2;
+    }
+}
+
+message GetPlayersResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Player payload = 2;
+}
+
+message GetPlayerInfoRequest {
+    string pid = 1;
+}
+
+message GetPlayerInfoResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    Player payload = 2;
+}
+
+message GetPlayStateRequest {
+    string pid = 1;
+}
+
+message GetPlayStateResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message SetPlayStateRequest {
+    string pid = 1;
+    PlayState.State state = 2;
+}
+
+message SetPlayStateResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message GetNowPlayingMediaRequest {
+    string pid = 1;
+}
+
+message GetNowPlayingMediaResponse {
+    message NowPlayingMedia {
+        .kheos.proto.base.v1.MediaType type = 1;
+        string song = 2;
+        string album = 3;
+        string artist = 4;
+        string imageUrl = 5 [json_name = "image_url"];
+        string albumId = 6;
+        string mid = 7;
+        string qid = 8;
+        string sid = 9;
+        string station = 10;
+    }
+
+    message PlayOptions {
+        repeated .kheos.proto.base.v1.Option play = 1;
+    }
+
+    .kheos.proto.base.v1.Heos heos = 1;
+    NowPlayingMedia payload = 2;
+    repeated PlayOptions options = 3;
+}
+
+message GetVolumeRequest {
+    string pid = 1;
+}
+
+message SetVolumeRequest {
+    string pid = 1;
+    uint32 level = 2;
+}
+
+message VolumeUpRequest {
+    string pid = 1;
+    uint32 step = 2;
+}
+
+message VolumeDownRequest {
+    string pid = 1;
+    uint32 step = 2;
+}
+
+message GetMuteRequest {
+    string pid = 1;
+}
+
+message SetMuteRequest {
+    string pid = 1;
+    .kheos.proto.base.v1.MuteState.State state = 2;
+}
+
+message ToggleMuteRequest {
+    string pid = 1;
+}
+
+message GetPlayModeRequest {
+    string pid = 1;
+}
+
+message GetPlayModeResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message SetPlayModeRequest {
+    string pid = 1;
+    PlayRepeatState.State repeat = 2;
+    PlayShuffleState.State shuffle = 3;
+}
+
+message SetPlayModeResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message GetQueueRequest {
+    string pid = 1;
+    uint32 start = 2;
+    uint32 end = 3;
+}
+
+message GetQueueResponse {
+    message Element {
+        string song = 1;
+        string album = 2;
+        string artist = 3;
+        string imageUrl = 4 [json_name = "image_url"];
+        string qid = 5;
+        string mid = 6;
+        string albumId = 7 [json_name = "album_id"];
+    }
+
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Element payload = 2;
+}
+
+message PlayQueueRequest {
+    string pid = 1;
+    string qid = 2;
+}
+
+message PlayQueueResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message RemoveFromQueueRequest {
+    string pid = 1;
+    repeated string qids = 2;
+}
+
+message RemoveFromQueueResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message SaveQueueRequest {
+    string pid = 1;
+    string name = 2;
+}
+
+message SaveQueueResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message ClearQueueRequest {
+    string pid = 1;
+}
+
+message ClearQueueResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message PlayPreviousRequest {
+    string pid = 1;
+}
+
+message PlayPreviousResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message PlayNextRequest {
+    string pid = 1;
+}
+
+message PlayNextResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+service PlayerService {
+    rpc GetPlayers (.kheos.proto.base.v1.Empty) returns (GetPlayersResponse) {
+    }
+
+    rpc GetPlayerInfo (GetPlayerInfoRequest) returns (GetPlayerInfoResponse) {
+    }
+
+    rpc GetPlayState (GetPlayStateRequest) returns (GetPlayStateResponse) {
+    }
+
+    rpc SetPlayState (SetPlayStateRequest) returns (SetPlayStateResponse) {
+    }
+
+    rpc GetNowPlayingMedia (GetNowPlayingMediaRequest) returns (GetNowPlayingMediaResponse) {
+    }
+
+    rpc GetVolume (GetVolumeRequest) returns (.kheos.proto.base.v1.GetVolumeResponse) {
+    }
+
+    rpc SetVolume (SetVolumeRequest) returns (.kheos.proto.base.v1.SetVolumeResponse) {
+    }
+
+    rpc VolumeUp (VolumeUpRequest) returns (.kheos.proto.base.v1.VolumeUpResponse) {
+    }
+
+    rpc VolumeDown (VolumeDownRequest) returns (.kheos.proto.base.v1.VolumeDownResponse) {
+    }
+
+    rpc GetMute (GetMuteRequest) returns (.kheos.proto.base.v1.GetMuteResponse) {
+    }
+
+    rpc SetMute (SetMuteRequest) returns (.kheos.proto.base.v1.SetMuteResponse) {
+    }
+
+    rpc ToggleMute (ToggleMuteRequest) returns (.kheos.proto.base.v1.ToggleMuteResponse) {
+    }
+
+    rpc GetPlayMode (GetPlayModeRequest) returns (GetPlayModeResponse) {
+    }
+
+    rpc SetPlayMode (SetPlayModeRequest) returns (SetPlayModeResponse) {
+    }
+
+    rpc GetQueue (GetQueueRequest) returns (GetQueueResponse) {
+    }
+
+    rpc PlayQueue (PlayQueueRequest) returns (PlayQueueResponse) {
+    }
+
+    rpc RemoveFromQueue (RemoveFromQueueRequest) returns (RemoveFromQueueResponse) {
+    }
+
+    rpc SaveQueue (SaveQueueRequest) returns (SaveQueueResponse) {
+    }
+
+    rpc ClearQueue (ClearQueueRequest) returns (ClearQueueResponse) {
+    }
+
+    rpc PlayPrevious (PlayPreviousRequest) returns (PlayPreviousResponse) {
+    }
+
+    rpc PlayNext (PlayNextRequest) returns (PlayNextResponse) {
+    }
+}

@@ -30,14 +30,6 @@ class MessageTest : StringSpec() {
       message.value("pid") shouldBe "0"
     }
 
-    "should get enum value" {
-      val message = Message.Builder()
-          .add("state", MuteState.ON)
-          .build()
-
-      message.enumValue("state", { MuteState.valueOf(it) }) shouldBe MuteState.ON
-    }
-
     "should get int value" {
       val message = Message.Builder()
           .add("foo", 100)
@@ -51,7 +43,7 @@ class MessageTest : StringSpec() {
           .add("foo", 100)
           .build()
 
-      message.typedValue("foo", { it.toInt() }) shouldBe 100
+      message.typedValue("foo") { it.toInt() } shouldBe 100
     }
 
     "should be empty" {

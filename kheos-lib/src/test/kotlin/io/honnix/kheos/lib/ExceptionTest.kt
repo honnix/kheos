@@ -24,14 +24,14 @@ import io.kotlintest.specs.StringSpec
 
 internal class HeosCommandExceptionTest : StringSpec({
   "should build correct exception from message" {
-    forAll({ eid: Int, text: String ->
+    forAll { eid: Int, text: String ->
       HeosCommandException.build(
           Message.Builder()
               .add("eid", eid)
               .add("text", text)
               .build()
       ) == HeosCommandException(ErrorId.from(eid), text)
-    })
+    }
   }
 
   "should build correct exception with fallback eid and test from message" {

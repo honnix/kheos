@@ -11,28 +11,4 @@
 
   <artifactId>kheos-common</artifactId>
   <packaging>jar</packaging>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.fourthline.cling</groupId>
-      <artifactId>cling-core</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.module</groupId>
-      <artifactId>jackson-module-kotlin</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-annotations</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.jmock</groupId>
-      <artifactId>jmock</artifactId>
-    </dependency>
-  </dependencies>
-
-  <build>
-    <plugins>
-    </plugins>
-  </build>
 </project>

@@ -1,0 +1,266 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.honnix.kheos.proto.browse.v1";
+option java_outer_classname = "KheosProtoBrowse";
+option objc_class_prefix = "KHEOS";
+
+package kheos.proto.browse.v1;
+
+import "base.proto";
+
+message MusicSource {
+    enum MusicSourceType {
+        music_service = 0;
+        heos_service = 1;
+        heos_server = 2;
+        dlna_server = 3;
+    }
+
+    string name = 1;
+    string imageUrl = 2 [json_name = "image_url"];
+    MusicSourceType type = 3;
+    string sid = 4;
+}
+
+message BrowseOptions {
+    repeated .kheos.proto.base.v1.Option browse = 1;
+}
+
+message GetMusicSourcesResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated MusicSource payload = 2;
+}
+
+message GetMusicSourceInfoRequest {
+    string sid = 1;
+}
+
+message GetMusicSourceInfoResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    MusicSource payload = 2;
+}
+
+message BrowseMediaSourcesRequest {
+    string sid = 1;
+    uint32 start = 2;
+    uint32 end = 3;
+}
+
+message BrowseMediaSourcesResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated MusicSource payload = 2;
+    repeated BrowseOptions options = 3;
+}
+
+enum YesNo {
+    yes = 0;
+    no = 1;
+}
+
+message Media {
+    YesNo container = 1;
+    YesNo playable = 2;
+    .kheos.proto.base.v1.MediaType type = 3;
+    string name = 4;
+    string imageUrl = 5 [json_name = "image_url"];
+    string mid = 6;
+    string cid = 7;
+    string artist = 8;
+    string album = 9;
+}
+
+message BrowseTopMusicRequest {
+    string sid = 1;
+    uint32 start = 2;
+    uint32 end = 3;
+}
+
+message BrowseTopMusicResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Media payload = 2;
+}
+
+message BrowseSourceContainersRequest {
+    string sid = 1;
+    string cid = 2;
+    uint32 start = 3;
+    uint32 end = 4;
+}
+
+message BrowseSourceContainersResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Media payload = 2;
+    repeated BrowseOptions options = 3;
+}
+
+enum Scid {
+    UNUSED_SCID = 0;
+    ARTIST = 1;
+    ALBUM = 2;
+    TRACK = 3;
+    STATION = 4;
+}
+
+message GetSearchCriteriaRequest {
+    string sid = 1;
+}
+
+message GetSearchCriteriaResponse {
+   message SearchCriteria {
+       string name = 1;
+       Scid scid = 2;
+       YesNo wildcard = 3;
+   }
+
+   .kheos.proto.base.v1.Heos heos = 1;
+   repeated SearchCriteria payload = 2;
+}
+
+message SearchRequest {
+    string sid = 1;
+    Scid scid = 2;
+    string search = 3;
+    uint32 start = 4;
+    uint32 end = 5;
+}
+
+message SearchResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Media payload = 2;
+}
+
+message PlayStreamRequest {
+    string pid = 1;
+    string sid = 2;
+    string mid = 3;
+    string name = 4;
+    string cid = 5;
+}
+
+message PlayStreamResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message PlayInputRequest {
+    string pid = 1;
+    string mid = 2;
+    string spid = 3;
+    string input = 4;
+}
+
+message PlayInputResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message AddToQueueRequest {
+    enum AddCriteriaId {
+        UNUSED_ADD_CRITERIA_ID = 0;
+        PLAY_NOW = 1;
+        PLAY_NEXT = 2;
+        ADD_TO_END = 3;
+        REPLACE_AND_PLAY = 4;
+    }
+
+    string pid = 1;
+    string sid = 2;
+    string cid = 3;
+    AddCriteriaId aid = 4;
+    string mid = 5;
+}
+
+message AddToQueueResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message RenamePlaylistRequest {
+    string sid = 1;
+    string cid = 2;
+    string name = 3;
+}
+
+message RenamePlaylistResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message DeletePlaylistRequest {
+    string sid = 1;
+    string cid = 2;
+}
+
+message DeletePlaylistResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+message RetrieveMetadataRequest {
+    string sid = 1;
+    string cid = 2;
+}
+
+message RetrieveMetadataResponse {
+    message Metadata {
+        message Image {
+            string imageUrl = 1 [json_name = "image_url"];
+            double width = 2;
+        }
+
+        string albumdId = 1 [json_name = "album_id"];
+        repeated Image images = 2;
+    }
+
+    .kheos.proto.base.v1.Heos heos = 1;
+    repeated Metadata payload = 2;
+}
+
+message SetServiceOptionRequest {
+    .kheos.proto.base.v1.OptionId option = 1;
+    map<string, string> values = 2;
+}
+
+message SetServiceOptionResponse {
+    .kheos.proto.base.v1.Heos heos = 1;
+}
+
+service BrowseService {
+    rpc GetMusicSources (.kheos.proto.base.v1.Empty) returns (GetMusicSourcesResponse) {
+    }
+
+    rpc GetMusicSourceInfo (GetMusicSourceInfoRequest) returns (GetMusicSourceInfoResponse) {
+    }
+
+    rpc BrowseMediaSources (BrowseMediaSourcesRequest) returns (BrowseMediaSourcesResponse) {
+    }
+
+    rpc BrowseTopMusic (BrowseTopMusicRequest) returns (BrowseTopMusicResponse) {
+    }
+
+    rpc BrowseSourceContainers (BrowseSourceContainersRequest) returns (BrowseSourceContainersResponse) {
+    }
+
+    rpc GetSearchCriteria (GetSearchCriteriaRequest) returns (GetSearchCriteriaResponse) {
+    }
+
+    rpc Search (SearchRequest) returns (SearchResponse) {
+    }
+
+    rpc PlayStream (PlayStreamRequest) returns (PlayStreamResponse) {
+    }
+
+    rpc PlayInput (PlayInputRequest) returns (PlayInputResponse) {
+    }
+
+    rpc AddToQueue (AddToQueueRequest) returns (AddToQueueResponse) {
+    }
+
+    rpc RenamePlaylist (RenamePlaylistRequest) returns (RenamePlaylistResponse) {
+    }
+
+    rpc DeletePlaylist (DeletePlaylistRequest) returns (DeletePlaylistResponse) {
+    }
+
+    rpc RetrieveMetadata (RetrieveMetadataRequest) returns (RetrieveMetadataResponse) {
+    }
+
+    rpc SetServiceOption (SetServiceOptionRequest) returns (SetServiceOptionResponse) {
+    }
+}

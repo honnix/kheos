@@ -26,10 +26,6 @@
       <groupId>${project.groupId}</groupId>
       <artifactId>kheos-service</artifactId>
     </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>kheos-client</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
