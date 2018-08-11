@@ -49,7 +49,7 @@ By default the service listens on 8888 and can be configured by env `GRPC_PORT`.
 
 Use `KHEOS_HEOS_HOST` to configure where to find your HEOS.
 
-For details and other configurations, refer to [kheos-service.conf](kheos-service/src/main/resources/application.conf).
+For details and other configurations, refer to [application.conf](kheos-service/src/main/resources/application.conf).
 
 ### To start hacking
 
